@@ -1,0 +1,23 @@
+{{ $content := index .Site.Data .Lang "content" }}
+
+<section class="about" id="about">
+  <div class="container">
+    <h2 class="section-title">{{ $content.about.title }}</h2>
+    <div class="about-content">
+      <div class="about-text">
+        {{ range $content.about.paragraphs }}
+          <p>{{ . }}</p>
+        {{ end }}
+      </div>
+      <div class="about-highlights">
+        {{ range $content.about.highlights }}
+          <div class="highlight-card">
+            <span class="highlight-icon">{{ .icon }}</span>
+            <h3>{{ .title }}</h3>
+            <p>{{ .description }}</p>
+          </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+</section>

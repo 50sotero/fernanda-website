@@ -1,0 +1,73 @@
+{{ define "main" }}
+{{ $cv := index .Site.Data .Lang "cv" }}
+
+<article class="cv-page">
+  <div class="cv-container">
+    <header class="cv-header">
+      <h1 class="cv-name">{{ $cv.name }}</h1>
+      <p class="cv-title">{{ $cv.title }}</p>
+      <p class="cv-contact">{{ .Site.Params.email }}</p>
+    </header>
+    
+    <section class="cv-section">
+      <h2>{{ i18n "cv_about" }}</h2>
+      <p class="cv-summary-text">{{ $cv.summary }}</p>
+    </section>
+    
+    <section class="cv-section">
+      <h2>{{ i18n "cv_education" }}</h2>
+      {{ range $cv.education }}
+        <div class="cv-entry">
+          <div class="cv-entry-header">
+            <h3>{{ .degree }}</h3>
+            <span class="cv-date">{{ .date }}</span>
+          </div>
+          <p class="cv-institution">{{ .institution }}</p>
+          {{ if .location }}
+            <p class="cv-location">{{ .location }}</p>
+          {{ end }}
+        </div>
+      {{ end }}
+    </section>
+    
+    <section class="cv-section">
+      <h2>{{ i18n "cv_experience" }}</h2>
+      {{ range $cv.experience }}
+        <div class="cv-entry">
+          <div class="cv-entry-header">
+            <h3>{{ .role }}</h3>
+            <span class="cv-date">{{ .date }}</span>
+          </div>
+          <p class="cv-company">{{ .company }}</p>
+          {{ if .description }}
+            <p class="cv-description">{{ .description }}</p>
+          {{ end }}
+        </div>
+      {{ end }}
+    </section>
+    
+    <section class="cv-section">
+      <h2>{{ i18n "cv_specialization" }}</h2>
+      <ul class="cv-skills">
+        {{ range $cv.specializations }}
+          <li>{{ . }}</li>
+        {{ end }}
+      </ul>
+    </section>
+    
+    <section class="cv-section">
+      <h2>{{ i18n "cv_languages" }}</h2>
+      <ul class="cv-languages">
+        {{ range $cv.languages }}
+          <li><strong>{{ .name }}:</strong> {{ .level }}</li>
+        {{ end }}
+      </ul>
+    </section>
+  </div>
+  
+  <div class="cv-actions no-print">
+    <button onclick="window.print()" class="btn btn-primary">{{ i18n "cv_print" }}</button>
+    <a href="{{ .Site.Home.RelPermalink }}" class="btn btn-outline">{{ i18n "cv_back" }}</a>
+  </div>
+</article>
+{{ end }}

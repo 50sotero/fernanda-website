@@ -1,0 +1,22 @@
+{{ $content := index .Site.Data .Lang "content" }}
+
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">{{ $content.hero.greeting }}</h1>
+        <p class="hero-subtitle">{{ $content.hero.tagline }}</p>
+        <p class="hero-description">{{ $content.hero.description }}</p>
+        <div class="hero-cta">
+          <a href="#contact" class="btn btn-primary">{{ i18n "cta_contact" }}</a>
+          <a href="#about" class="btn btn-secondary">{{ i18n "cta_learn_more" }}</a>
+        </div>
+      </div>
+      <div class="hero-image">
+        <div class="profile-photo">
+          <img src="/images/profile.png" alt="Fernanda - Psicóloga" loading="eager">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

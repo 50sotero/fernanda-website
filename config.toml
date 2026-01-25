@@ -1,0 +1,34 @@
+baseURL = "/"
+languageCode = "en"
+title = "Fernanda - Psychologist"
+
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = true
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+[languages]
+  [languages.en]
+    languageName = "English"
+    weight = 1
+    title = "Fernanda - Psychologist"
+    [languages.en.params]
+      description = "Brazilian psychologist serving patients across Europe and South America with Cognitive Behavioral Therapy"
+
+  [languages.pt]
+    languageName = "Português"
+    weight = 2
+    title = "Fernanda - Psicóloga"
+    [languages.pt.params]
+      description = "Psicóloga brasileira atendendo pacientes na Europa e América do Sul com Terapia Cognitivo-Comportamental"
+
+[params]
+  author = "Fernanda"
+  instagram = "https://www.instagram.com/psicolisboa"
+  email = "contact@example.com"
+
+[build]
+  writeStats = true

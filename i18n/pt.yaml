@@ -1,0 +1,35 @@
+nav_about: "Sobre"
+nav_approach: "Abordagem"
+nav_global: "Atuação Global"
+nav_cv: "Currículo"
+nav_contact: "Contato"
+nav_menu: "Menu"
+
+cta_contact: "Entre em Contato"
+cta_learn_more: "Saiba Mais"
+
+cv_about: "Sobre"
+cv_education: "Formação"
+cv_experience: "Experiência"
+cv_specialization: "Especialização"
+cv_languages: "Idiomas"
+cv_print: "Imprimir CV"
+cv_back: "Voltar ao Início"
+cv_view_full: "Ver Currículo Completo"
+
+contact_email: "Enviar Email"
+
+footer_tagline: "Psicóloga"
+footer_rights: "Todos os direitos reservados."
+
+location_ireland: "Irlanda"
+location_portugal: "Portugal"
+location_sweden: "Suécia"
+location_france: "França"
+location_usa: "Estados Unidos"
+location_brazil: "Brasil"
+location_peru: "Peru"
+
+instagram_posts: "publicações"
+instagram_followers: "seguidores"
+instagram_follow: "Seguir no Instagram"

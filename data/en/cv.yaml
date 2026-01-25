@@ -1,0 +1,30 @@
+name: "Fernanda"
+title: "Psychologist | CBT Specialist"
+
+summary: "Brazilian psychologist graduated from the Federal University of Alagoas, specialized in Cognitive Behavioral Therapy. Dedicated to providing quality mental health care to Brazilian patients living abroad through online therapy sessions. Experienced in treating anxiety disorders, depression, adjustment difficulties, and emotional regulation challenges."
+
+education:
+  - degree: "Bachelor in Psychology"
+    institution: "Federal University of Alagoas (UFAL)"
+    location: "Maceió, Alagoas, Brazil"
+    date: ""
+
+experience:
+  - role: "Online Psychologist"
+    company: "Private Practice"
+    date: "Present"
+    description: "Providing online psychological therapy to Brazilian patients across Europe and South America, specializing in CBT for anxiety, depression, and expatriate adjustment issues."
+
+specializations:
+  - "Cognitive Behavioral Therapy (CBT)"
+  - "Anxiety Disorders"
+  - "Depression"
+  - "Emotional Regulation"
+  - "Expatriate Psychology"
+  - "Online Therapy"
+
+languages:
+  - name: "Portuguese"
+    level: "Native"
+  - name: "English"
+    level: "Professional"

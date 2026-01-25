@@ -1,0 +1,108 @@
+hero:
+  greeting: "Hello, I'm Fernanda"
+  tagline: "Psychologist | Cognitive Behavioral Therapy"
+  description: "Brazilian psychologist serving patients across Europe, North America, and South America. I provide online therapy in Portuguese for Brazilians living abroad, helping them navigate life's challenges while far from home."
+
+about:
+  title: "About Me"
+  paragraphs:
+    - "I am a Brazilian psychologist graduated from the Federal University of Alagoas (UFAL), specialized in Cognitive Behavioral Therapy (CBT). My mission is to provide quality psychological care to Brazilian patients wherever they are in the world."
+    - "Living abroad brings unique challenges—adapting to a new culture, dealing with distance from family, building a new social network. I understand these experiences and offer a safe space where you can express yourself in your native language."
+    - "Through evidence-based techniques, I help my patients develop emotional regulation skills, overcome anxiety and depression, and build a more fulfilling life."
+  highlights:
+    - icon: "🌍"
+      title: "Global Reach"
+      description: "Online sessions for Brazilians in Europe, North America, and South America"
+    - icon: "🧠"
+      title: "CBT Specialist"
+      description: "Evidence-based approach with proven results"
+    - icon: "💬"
+      title: "Native Portuguese"
+      description: "Therapy in your language, respecting your culture"
+
+approach:
+  title: "My Approach"
+  intro: "Cognitive Behavioral Therapy (CBT) is a structured, goal-oriented form of psychotherapy that focuses on the relationship between thoughts, feelings, and behaviors. It is one of the most researched and effective treatments for a wide range of psychological conditions."
+  methods:
+    - name: "Cognitive Restructuring"
+      description: "Identifying and challenging unhelpful thought patterns that contribute to emotional distress."
+    - name: "Behavioral Activation"
+      description: "Gradually engaging in activities that bring meaning and pleasure to combat depression and low motivation."
+    - name: "Exposure Techniques"
+      description: "Safely confronting feared situations to reduce anxiety and build confidence."
+    - name: "Mindfulness Integration"
+      description: "Developing present-moment awareness to manage stress and improve emotional regulation."
+    - name: "Problem-Solving Skills"
+      description: "Learning structured approaches to navigate life's challenges effectively."
+    - name: "Relapse Prevention"
+      description: "Building lasting skills and strategies to maintain progress after therapy ends."
+
+map:
+  title: "Global Practice"
+  subtitle: "Serving Brazilian patients across continents through secure online sessions"
+  locations:
+    - name: "Ireland"
+      flag: "🇮🇪"
+      x: 470
+      y: 135
+    - name: "Portugal"
+      flag: "🇵🇹"
+      x: 460
+      y: 160
+    - name: "Sweden"
+      flag: "🇸🇪"
+      x: 510
+      y: 110
+    - name: "France"
+      flag: "🇫🇷"
+      x: 480
+      y: 150
+    - name: "United States"
+      flag: "🇺🇸"
+      x: 250
+      y: 200
+    - name: "Brazil"
+      flag: "🇧🇷"
+      x: 310
+      y: 330
+    - name: "Peru"
+      flag: "🇵🇪"
+      x: 260
+      y: 310
+
+instagram:
+  title: "Follow on Instagram"
+  subtitle: "Tips, insights, and reflections on mental health for Brazilians abroad"
+  bio: "Psychologist | CBT | Supporting Brazilians worldwide"
+  posts: "50+"
+  followers: "1K+"
+  featured_posts:
+    - icon: "🧠"
+      topic: "Anxiety"
+      caption: "Understanding anxiety triggers"
+    - icon: "💭"
+      topic: "Thoughts"
+      caption: "Cognitive restructuring tips"
+    - icon: "🌱"
+      topic: "Growth"
+      caption: "Personal development journey"
+    - icon: "🏠"
+      topic: "Homesick"
+      caption: "Dealing with saudade"
+    - icon: "💪"
+      topic: "Resilience"
+      caption: "Building emotional strength"
+    - icon: "🌍"
+      topic: "Abroad"
+      caption: "Living far from home"
+
+cv_summary:
+  title: "Qualifications"
+  education:
+    degree: "Bachelor in Psychology"
+    institution: "Federal University of Alagoas (UFAL)"
+  specialization: "Cognitive Behavioral Therapy (CBT)"
+
+contact:
+  title: "Let's Connect"
+  subtitle: "Ready to start your therapeutic journey? Reach out through email or Instagram to schedule a consultation."

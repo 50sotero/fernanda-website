@@ -1,0 +1,26 @@
+{{ $content := index .Site.Data .Lang "content" }}
+
+<section class="cv-summary" id="cv">
+  <div class="container">
+    <h2 class="section-title">{{ $content.cv_summary.title }}</h2>
+    
+    <div class="cv-highlights">
+      <div class="cv-education">
+        <h3>{{ i18n "cv_education" }}</h3>
+        <div class="cv-item">
+          <p class="cv-degree">{{ $content.cv_summary.education.degree }}</p>
+          <p class="cv-institution">{{ $content.cv_summary.education.institution }}</p>
+        </div>
+      </div>
+      
+      <div class="cv-specialization">
+        <h3>{{ i18n "cv_specialization" }}</h3>
+        <div class="cv-item">
+          <p class="cv-focus">{{ $content.cv_summary.specialization }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <a href="{{ relLangURL "cv/" }}" class="btn btn-outline">{{ i18n "cv_view_full" }}</a>
+  </div>
+</section>

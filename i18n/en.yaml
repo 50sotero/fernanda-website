@@ -1,0 +1,35 @@
+nav_about: "About"
+nav_approach: "Approach"
+nav_global: "Global Practice"
+nav_cv: "CV"
+nav_contact: "Contact"
+nav_menu: "Menu"
+
+cta_contact: "Get in Touch"
+cta_learn_more: "Learn More"
+
+cv_about: "About"
+cv_education: "Education"
+cv_experience: "Experience"
+cv_specialization: "Specialization"
+cv_languages: "Languages"
+cv_print: "Print CV"
+cv_back: "Back to Home"
+cv_view_full: "View Full CV"
+
+contact_email: "Send Email"
+
+footer_tagline: "Psychologist"
+footer_rights: "All rights reserved."
+
+location_ireland: "Ireland"
+location_portugal: "Portugal"
+location_sweden: "Sweden"
+location_france: "France"
+location_usa: "United States"
+location_brazil: "Brazil"
+location_peru: "Peru"
+
+instagram_posts: "posts"
+instagram_followers: "followers"
+instagram_follow: "Follow on Instagram"

@@ -1,0 +1,81 @@
+name: Marge Simpson CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-windows:
+    name: Test on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Marge Self-Tests (PowerShell)
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File ./system/scripts/test-marge.ps1
+
+  test-linux:
+    name: Test on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x ./system/scripts/verify.sh
+          chmod +x ./system/scripts/cleanup.sh
+          chmod +x ./system/scripts/test-marge.sh
+      
+      - name: Run Marge Self-Tests (Bash)
+        run: ./system/scripts/test-marge.sh
+
+  test-macos:
+    name: Test on macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x ./system/scripts/verify.sh
+          chmod +x ./system/scripts/cleanup.sh
+          chmod +x ./system/scripts/test-marge.sh
+      
+      - name: Run Marge Self-Tests (Bash)
+        run: ./system/scripts/test-marge.sh
+
+  shellcheck:
+    name: ShellCheck Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+      
+      - name: Run ShellCheck on shell scripts
+        run: |
+          # Run shellcheck on all shell scripts, exit with error if any fail
+          # Fix shellcheck warnings in scripts rather than suppressing them here
+          find ./system/scripts -name "*.sh" -type f | while read -r script; do
+            echo "Checking: $script"
+            shellcheck "$script" || exit 1
+          done
+          
+          # Also check meta scripts and CLI scripts
+          find ./.dev -name "*.sh" -type f | while read -r script; do
+            echo "Checking: $script"
+            shellcheck "$script" || exit 1
+          done
+          
+          # Also check bash scripts without .sh extension in cli/
+          for script in ./cli/marge ./cli/marge-init; do
+            if [ -f "$script" ]; then
+              echo "Checking: $script"
+              shellcheck "$script" || exit 1
+            fi
+          done

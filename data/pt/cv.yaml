@@ -1,0 +1,30 @@
+name: "Fernanda"
+title: "Psicóloga | Especialista em TCC"
+
+summary: "Psicóloga brasileira formada pela Universidade Federal de Alagoas, especializada em Terapia Cognitivo-Comportamental. Dedicada a oferecer atendimento de saúde mental de qualidade para pacientes brasileiros que vivem no exterior através de sessões de terapia online. Experiência no tratamento de transtornos de ansiedade, depressão, dificuldades de adaptação e desafios de regulação emocional."
+
+education:
+  - degree: "Bacharelado em Psicologia"
+    institution: "Universidade Federal de Alagoas (UFAL)"
+    location: "Maceió, Alagoas, Brasil"
+    date: ""
+
+experience:
+  - role: "Psicóloga Online"
+    company: "Consultório Particular"
+    date: "Atualmente"
+    description: "Atendimento psicológico online para pacientes brasileiros na Europa e América do Sul, com especialização em TCC para ansiedade, depressão e questões de adaptação no exterior."
+
+specializations:
+  - "Terapia Cognitivo-Comportamental (TCC)"
+  - "Transtornos de Ansiedade"
+  - "Depressão"
+  - "Regulação Emocional"
+  - "Psicologia do Expatriado"
+  - "Terapia Online"
+
+languages:
+  - name: "Português"
+    level: "Nativo"
+  - name: "Inglês"
+    level: "Profissional"

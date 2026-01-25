@@ -1,0 +1,1420 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2015  # A && B || C pattern is intentional for fallback
+# shellcheck disable=SC2155  # Declare and assign combined is acceptable here
+# shellcheck disable=SC1090  # Can't follow non-constant source (dynamic config)
+# shellcheck disable=SC2034  # AUTO reserved for future use
+set -eo pipefail
+
+# ============================================
+# Marge - Autonomous AI Coding Loop
+# ============================================
+
+MARGE_HOME="${MARGE_HOME:-$HOME/.marge}"
+VERSION=$(cat "$(dirname "${BASH_SOURCE[0]}")/../VERSION" 2>/dev/null || echo "0.0.0")
+
+# Defaults
+DRY_RUN=false
+VERBOSE=false
+MODEL=""
+# FAST mode: Passed to AI context to skip verification steps (verify.ps1/verify.sh)
+FAST=false
+LOOP=false
+AUTO=false
+FULL_MODE=false
+LITE_MODE=false
+MAX_ITER=${MAX_ITER:-20}
+MAX_RETRIES=${MAX_RETRIES:-3}
+RETRY_DELAY=${RETRY_DELAY:-5}
+AUTO_COMMIT=true
+ENGINE="claude"
+BRANCH_PER_TASK=false
+CREATE_PR=false
+PARALLEL=false
+MAX_PARALLEL=${MAX_PARALLEL:-3}
+PRD_FILE="tracking/PRD.md"
+MARGE_FOLDER="${MARGE_FOLDER:-.marge}"
+
+# Fallback pricing (Claude Sonnet) - used when model_pricing.json unavailable
+DEFAULT_INPUT_RATE=3.00   # $/1M input tokens
+DEFAULT_OUTPUT_RATE=15.00 # $/1M output tokens
+
+# State
+iteration=0
+total_input_tokens=0
+total_output_tokens=0
+# Note: PROGRESS_FILE is set after arg parsing to respect --folder
+# CONFIG_FILE intentionally reads from .marge/ (bootstrap config that can redirect to other folders)
+CONFIG_FILE=".marge/config.yaml"
+
+# Colors
+if [[ -t 1 ]] && command -v tput &>/dev/null; then
+    RED=$(tput setaf 1 2>/dev/null) || RED=""
+    GREEN=$(tput setaf 2 2>/dev/null) || GREEN=""
+    YELLOW=$(tput setaf 3 2>/dev/null) || YELLOW=""
+    BLUE=$(tput setaf 4 2>/dev/null) || BLUE=""
+    CYAN=$(tput setaf 6 2>/dev/null) || CYAN=""
+    BOLD=$(tput bold 2>/dev/null) || BOLD=""
+    RESET=$(tput sgr0 2>/dev/null) || RESET=""
+else
+    RED="" GREEN="" YELLOW="" BLUE="" CYAN="" BOLD="" RESET=""
+fi
+
+log_info() { echo "${BLUE}[INFO]${RESET} $*"; }
+log_success() { echo "${GREEN}[OK]${RESET} $*"; }
+log_warn() { echo "${YELLOW}[WARN]${RESET} $*"; }
+log_error() { echo "${RED}[ERROR]${RESET} $*" >&2; }
+log_debug() { [[ "$VERBOSE" == true ]] && echo "[DEBUG] $*" || true; }
+
+# Validate positive integer
+validate_positive_int() {
+    local value="$1" name="$2"
+    if ! [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+        log_error "$name must be a positive integer, got: $value"
+        return 1
+    fi
+    return 0
+}
+
+print_usage() {
+    cat <<EOF
+${BOLD}marge${RESET} v$VERSION - Autonomous AI coding loop
+
+${BOLD}QUICK START:${RESET}
+  1. Run a task:     marge "fix the login bug"
+  2. That's it!      Marge handles AGENTS.md setup automatically.
+
+${BOLD}USAGE:${RESET}
+  marge [options]              Run PRD tasks from tracking/PRD.md
+  marge "<task>" [options]     Run a single task
+  marge "<t1>" "<t2>" ...      Chain multiple tasks
+  marge meta "<task>"          Run task using .meta_marge folder
+
+${BOLD}EXAMPLES:${RESET}
+  marge "fix the login bug"
+  marge "fix bug" "add tests"  # Chain multiple tasks
+  marge --full "complex task"  # Force full AGENTS.md
+  marge --loop --auto
+  marge --folder .meta_marge "run audit"
+  marge meta "run self-improvement audit"
+  marge --parallel --max-parallel 3
+  marge --engine aider --loop
+  marge --branch-per-task --create-pr
+
+${BOLD}OPTIONS:${RESET}
+  --auto              Auto-approve for non-claude engines
+  --dry-run           Preview without running
+  --model <model>     Model override
+  --fast              Skip verification
+  --full              Force full AGENTS.md (even for one-off tasks)
+  --loop              Loop until complete
+  --engine <e>        Engine: claude, opencode, codex, aider
+  --folder <dir>      Target Marge folder (default: .marge)
+  --max-iterations N  Max iterations (default: $MAX_ITER)
+  --max-retries N     Max retries per task (default: $MAX_RETRIES)
+  --no-commit         Disable auto-commit
+  --parallel          Run tasks in parallel using git worktrees
+  --max-parallel N    Max parallel agents (default: $MAX_PARALLEL)
+  --branch-per-task   Create branch per task
+  --create-pr         Create PR when done
+  -v, --verbose       Verbose output
+  --version           Show version
+  --help              Show help
+
+${BOLD}COMMANDS:${RESET}
+  init                Initialize .marge/ and tracking/PRD.md template
+  clean               Remove local .marge/ folder
+  status              Show current status and progress
+  config              Show config file contents
+  resume              Resume from saved progress
+  doctor              Run diagnostic checks for setup
+
+${BOLD}META-DEVELOPMENT:${RESET}
+  meta init           Set up .meta_marge/ for improving Marge itself
+  meta init --fresh   Reset to clean state (clears tracked work)
+  meta "<task>"       Run task with meta configuration
+  meta status         Show meta-marge state and tracked work
+  meta clean          Remove .meta_marge/
+
+  Meta-development workflow:
+    .meta_marge/AGENTS.md    <- Configuration (the guide)
+           |
+    AI audits marge-simpson/ <- Target of improvements
+           |
+    Changes made DIRECTLY to marge-simpson/
+           |
+    Work tracked in .meta_marge/tracking/
+
+${BOLD}CONFIG FILE:${RESET}
+  Place .marge/config.yaml in your project:
+    engine: claude
+    model: ""
+    max_iterations: 20
+    max_retries: 3
+    auto_commit: true
+    folder: .marge
+
+${BOLD}ENVIRONMENT:${RESET}
+  MARGE_HOME          Installation directory (default: ~/.marge)
+  MARGE_FOLDER        Default folder (default: .marge)
+
+${BOLD}PRD FORMAT:${RESET}
+  Tasks are parsed from tracking/PRD.md using "### Task N: Title" format.
+  See 'marge init' for a template.
+EOF
+}
+
+slugify() {
+    # shellcheck disable=SC2001  # sed needed for regex patterns not supported by bash substitution
+    echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed -E 's/^-|-$//g' | cut -c1-50
+}
+
+notify_done() {
+    local msg="${1:-Marge complete}"
+    command -v notify-send &>/dev/null && notify-send "Marge" "$msg" 2>/dev/null || true
+    [[ "$(uname)" == "Darwin" ]] && command -v osascript &>/dev/null && \
+        osascript -e "display notification \"$msg\" with title \"Marge\"" 2>/dev/null || true
+}
+
+show_spinner() {
+    local output_file="$1"
+    local task="$2"
+    local pid="$3"
+    local start_time=$(date +%s)
+    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local spin_idx=0
+    local current_step="Working"
+
+    task="${task:0:45}..."
+
+    while kill -0 "$pid" 2>/dev/null; do
+        local elapsed=$(($(date +%s) - start_time))
+        local mins=$((elapsed / 60))
+        local secs=$((elapsed % 60))
+
+        # Check output for step indicators
+        if [[ -f "$output_file" ]] && [[ -s "$output_file" ]]; then
+            local content
+            content=$(tail -c 3000 "$output_file" 2>/dev/null || true)
+
+            if echo "$content" | grep -qiE 'git commit'; then
+                current_step="Committing"
+            elif echo "$content" | grep -qiE 'git add'; then
+                current_step="Staging"
+            elif echo "$content" | grep -qiE 'lint|eslint|biome'; then
+                current_step="Linting"
+            elif echo "$content" | grep -qiE 'test|jest|vitest|pytest'; then
+                current_step="Testing"
+            elif echo "$content" | grep -qiE '"tool":"[Ww]rite"|"tool":"[Ee]dit"'; then
+                current_step="Writing"
+            elif echo "$content" | grep -qiE '"tool":"[Rr]ead"|"tool":"[Gg]lob"'; then
+                current_step="Reading"
+            elif echo "$content" | grep -qiE 'thinking\|Thinking'; then
+                current_step="Thinking"
+            fi
+        fi
+
+        local spinner_char="${spinstr:$spin_idx:1}"
+        printf "\r  \033[38;2;98;154;211m%s\033[0m \033[38;2;255;217;15m%s\033[0m [%02d:%02d] %s" "$spinner_char" "$current_step" "$mins" "$secs" "$task"
+
+        spin_idx=$(( (spin_idx + 1) % ${#spinstr} ))
+        sleep 0.1
+    done
+
+    # Clear spinner line
+    printf "\r%80s\r" ""
+}
+
+load_config() {
+    [[ ! -f "$CONFIG_FILE" ]] && return 0
+
+    local parse_output
+    if ! parse_output=$(grep -v '^#' "$CONFIG_FILE" | tr ':' '=' 2>&1); then
+        log_warn "Failed to parse config file '$CONFIG_FILE': $parse_output"
+        log_warn "Using default configuration values"
+        return 0
+    fi
+
+    while IFS='=' read -r key value; do
+        [[ -z "$key" || "$key" =~ ^# ]] && continue
+        key=${key// /}
+        value=${value// /}
+        value=${value//\"/}
+        value=${value%%#*}
+
+        case "$key" in
+            engine) [[ -z "$ENGINE" || "$ENGINE" == "claude" ]] && ENGINE="$value" ;;
+            model) [[ -z "$MODEL" ]] && MODEL="$value" ;;
+            max_iterations)
+                if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+                    MAX_ITER="$value"
+                else
+                    log_warn "Config: max_iterations must be a positive integer, got '$value' - using default ($MAX_ITER)"
+                fi
+                ;;
+            max_retries)
+                if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
+                    MAX_RETRIES="$value"
+                else
+                    log_warn "Config: max_retries must be a positive integer, got '$value' - using default ($MAX_RETRIES)"
+                fi
+                ;;
+            auto_commit) AUTO_COMMIT="$value" ;;
+            folder) [[ -z "$MARGE_FOLDER" || "$MARGE_FOLDER" == ".marge" ]] && MARGE_FOLDER="$value" ;;
+        esac
+    done <<< "$parse_output"
+}
+
+save_progress() {
+    mkdir -p "$MARGE_FOLDER"
+    cat > "$PROGRESS_FILE" <<EOF
+iteration=$iteration
+task_index=${1:-0}
+timestamp=$(date +%s)
+status=${2:-running}
+EOF
+}
+
+load_progress() {
+    [[ ! -f "$PROGRESS_FILE" ]] && return 1
+    # Security: Parse explicitly instead of using 'source' to prevent code injection
+    while IFS='=' read -r key value; do
+        # Only allow known keys with valid values
+        [[ -z "$key" ]] && continue
+        [[ "$key" =~ ^[[:space:]]*# ]] && continue  # Skip comments
+        key=$(echo "$key" | tr -d '[:space:]')
+        value=$(echo "$value" | tr -d '[:space:]"'"'")
+        case "$key" in
+            iteration)
+                [[ "$value" =~ ^[0-9]+$ ]] && iteration="$value"
+                ;;
+        esac
+    done < "$PROGRESS_FILE"
+    return 0
+}
+
+clear_progress() {
+    rm -f "$PROGRESS_FILE" 2>/dev/null
+}
+
+detect_project() {
+    if [[ -f "package.json" ]]; then
+        echo "node"
+    elif [[ -f "Cargo.toml" ]]; then
+        echo "rust"
+    elif [[ -f "go.mod" ]]; then
+        echo "go"
+    elif [[ -f "requirements.txt" ]] || [[ -f "pyproject.toml" ]]; then
+        echo "python"
+    elif [[ -f "Gemfile" ]]; then
+        echo "ruby"
+    else
+        echo "unknown"
+    fi
+}
+
+setup_worktree() {
+    local task_slug="$1"
+    local worktree_dir="$MARGE_FOLDER/worktrees/$task_slug"
+
+    if [[ ! -d "$worktree_dir" ]]; then
+        git worktree add "$worktree_dir" -b "marge/$task_slug" 2>/dev/null || {
+            git worktree add "$worktree_dir" "marge/$task_slug" 2>/dev/null || return 1
+        }
+    fi
+    echo "$worktree_dir"
+}
+
+cleanup_worktrees() {
+    git worktree prune 2>/dev/null || true
+    rm -rf "$MARGE_FOLDER/worktrees" 2>/dev/null || true
+}
+
+check_engine() {
+    local install_hints="
+  Install with one of:
+    claude:   npm install -g @anthropic-ai/claude-cli
+    aider:    pip install aider-chat
+    opencode: go install github.com/opencode-ai/opencode@latest
+    codex:    npm install -g @openai/codex
+
+  Or specify a different engine: marge --engine aider 'your task'"
+
+    case "$1" in
+        claude) command -v claude &>/dev/null || { log_error "claude not found.$install_hints"; return 1; } ;;
+        opencode) command -v opencode &>/dev/null || { log_error "opencode not found.$install_hints"; return 1; } ;;
+        codex) command -v codex &>/dev/null || { log_error "codex not found.$install_hints"; return 1; } ;;
+        aider) command -v aider &>/dev/null || { log_error "aider not found.$install_hints"; return 1; } ;;
+        *) log_error "Unknown engine: $1"; return 1 ;;
+    esac
+}
+
+parse_token_usage() {
+    local output_file="$1"
+    local input_tokens=0
+    local output_tokens=0
+
+    if [[ -f "$output_file" ]]; then
+        # Token parsing patterns (MS-0003 documentation):
+        # Pattern 1: Claude CLI stream-json format - "type": "result" contains nested usage object
+        # Pattern 2: Generic OpenAI-style - standalone "usage" object with input/output_tokens
+        # Pattern 3: Fallback for APIs returning only total_tokens - estimates 70/30 split
+        #
+        # Each pattern is tried in order; first successful parse wins.
+        # If adding a new engine, check its output format and add appropriate pattern.
+
+        # Pattern 1: Claude stream-json ("type": "result" with usage nested)
+        local result_line
+        result_line=$(grep -E '"type"\s*:\s*"result"' "$output_file" 2>/dev/null | tail -1) || true
+
+        if [[ -n "$result_line" ]]; then
+            input_tokens=$(echo "$result_line" | grep -oE '"input_tokens"\s*:\s*[0-9]+' | grep -oE '[0-9]+' | tail -1) || input_tokens=0
+            output_tokens=$(echo "$result_line" | grep -oE '"output_tokens"\s*:\s*[0-9]+' | grep -oE '[0-9]+' | tail -1) || output_tokens=0
+        fi
+
+        # Pattern 2: Look for usage object directly if above failed
+        if [[ "$input_tokens" -eq 0 ]] && [[ "$output_tokens" -eq 0 ]]; then
+            local usage_line
+            usage_line=$(grep -E '"usage"\s*:' "$output_file" 2>/dev/null | tail -1) || true
+            if [[ -n "$usage_line" ]]; then
+                input_tokens=$(echo "$usage_line" | grep -oE '"input_tokens"\s*:\s*[0-9]+' | grep -oE '[0-9]+' | tail -1) || input_tokens=0
+                output_tokens=$(echo "$usage_line" | grep -oE '"output_tokens"\s*:\s*[0-9]+' | grep -oE '[0-9]+' | tail -1) || output_tokens=0
+            fi
+        fi
+
+        # Pattern 3: Check for total_tokens as fallback
+        if [[ "$input_tokens" -eq 0 ]] && [[ "$output_tokens" -eq 0 ]]; then
+            local total
+            total=$(grep -oE '"total_tokens"\s*:\s*[0-9]+' "$output_file" 2>/dev/null | tail -1 | grep -oE '[0-9]+') || total=0
+            if [[ "$total" -gt 0 ]]; then
+                # Estimate split if only total available
+                input_tokens=$((total * 7 / 10))
+                output_tokens=$((total * 3 / 10))
+            fi
+        fi
+    fi
+
+    # Ensure values are numeric
+    input_tokens=${input_tokens:-0}
+    output_tokens=${output_tokens:-0}
+    [[ ! "$input_tokens" =~ ^[0-9]+$ ]] && input_tokens=0
+    [[ ! "$output_tokens" =~ ^[0-9]+$ ]] && output_tokens=0
+
+    # Calculate cost using model pricing
+    # Default to Claude Sonnet-class pricing (fallback when file missing/invalid)
+    local input_rate=$DEFAULT_INPUT_RATE
+    local output_rate=$DEFAULT_OUTPUT_RATE
+
+    # Try to read from model_pricing.json if available
+    local pricing_file="./$MARGE_FOLDER/model_pricing.json"
+    [[ ! -f "$pricing_file" ]] && pricing_file="$MARGE_HOME/shared/model_pricing.json"
+
+    if [[ -f "$pricing_file" ]]; then
+        if ! command -v jq &>/dev/null; then
+            log_warn "jq not installed - using fallback pricing (\$3/\$15 per 1M tokens)"
+        else
+            # Validate JSON is parseable
+            if ! jq empty "$pricing_file" 2>/dev/null; then
+                log_warn "model_pricing.json is malformed JSON - using fallback pricing (\$3/\$15 per 1M tokens)"
+            # Validate 'models' array exists
+            elif ! jq -e '.models | type == "array"' "$pricing_file" &>/dev/null; then
+                log_warn "model_pricing.json missing 'models' array - using fallback pricing (\$3/\$15 per 1M tokens)"
+            else
+                local model_name="Claude Sonnet"
+                [[ "$MODEL" == *"opus"* ]] && model_name="Claude Opus"
+                local rates
+                rates=$(jq -r --arg m "$model_name" '.models[] | select(.name | contains($m)) | "\(.input_per_1m) \(.output_per_1m)"' "$pricing_file" 2>/dev/null | head -1) || true
+                if [[ -n "$rates" ]]; then
+                    local parsed_input parsed_output
+                    parsed_input=$(echo "$rates" | awk '{print $1}')
+                    parsed_output=$(echo "$rates" | awk '{print $2}')
+                    # Validate rates are numeric
+                    if [[ "$parsed_input" =~ ^[0-9.]+$ ]] && [[ "$parsed_output" =~ ^[0-9.]+$ ]]; then
+                        input_rate=$parsed_input
+                        output_rate=$parsed_output
+                    else
+                        log_warn "model_pricing.json has invalid pricing values - using fallback pricing"
+                    fi
+                fi
+            fi
+        fi
+    else
+        log_debug "model_pricing.json not found - using fallback pricing"
+    fi
+
+    if [[ $input_tokens -gt 0 ]] || [[ $output_tokens -gt 0 ]]; then
+        local cost
+        cost=$(awk -v it="$input_tokens" -v ot="$output_tokens" -v ir="$input_rate" -v or="$output_rate" \
+            'BEGIN {printf "%.4f", (it * ir + ot * or) / 1000000}')
+        echo "  ${CYAN}Tokens:${RESET} ${input_tokens} in / ${output_tokens} out · ${CYAN}Cost:${RESET} \$${cost}"
+
+        # Update totals for summary
+        total_input_tokens=$((total_input_tokens + input_tokens))
+        total_output_tokens=$((total_output_tokens + output_tokens))
+    else
+        echo "  ${YELLOW}Token usage not available${RESET}"
+    fi
+}
+
+build_engine_cmd() {
+    local engine="$1"
+    case "$engine" in
+        claude)
+            # -p requires prompt immediately after, other flags come before or after
+            # --output-format stream-json requires --verbose when using -p
+            echo -n "claude --dangerously-skip-permissions --verbose --output-format stream-json"
+            [[ -n "$MODEL" ]] && echo -n " --model $MODEL"
+            echo -n " -p"
+            ;;
+        opencode)
+            echo -n "opencode --approval-mode full-auto"
+            [[ -n "$MODEL" ]] && echo -n " --model $MODEL"
+            ;;
+        codex)
+            echo -n "codex exec --full-auto"
+            ;;
+        aider)
+            echo -n "aider --yes --message"
+            [[ -n "$MODEL" ]] && echo -n " --model $MODEL"
+            ;;
+    esac
+}
+
+auto_commit() {
+    [[ "$AUTO_COMMIT" != true ]] && return 0
+    git rev-parse --git-dir &>/dev/null || return 0
+    git add . 2>/dev/null || true
+    git commit -m "Marge auto iteration $1" 2>/dev/null || true
+}
+
+is_task_complete() {
+    local tasklist="./$MARGE_FOLDER/tracking/tasklist.md"
+    local assessment="./$MARGE_FOLDER/tracking/assessment.md"
+
+    # If tasklist exists and has unchecked items, not complete
+    [[ -f "$tasklist" ]] && grep -q "\[ \]" "$tasklist" && return 1
+    # If assessment exists and indicates completion, complete
+    [[ -f "$assessment" ]] && grep -iqE "(clean|complete|no issues)" "$assessment" && return 0
+    # If neither file exists or no completion indicators, assume not complete
+    [[ ! -f "$tasklist" && ! -f "$assessment" ]] && return 1
+    return 0
+}
+
+# =============================================================================
+# META-MARGE FUNCTIONS (MS-0015)
+# =============================================================================
+
+test_meta_has_work() {
+    # Check if .meta_marge/system/tracking has tracked work (MS-#### entries)
+    # MS-0009: Fixed path from .meta_marge/tracking/ to .meta_marge/system/tracking/
+    local assessment=".meta_marge/system/tracking/assessment.md"
+    [[ ! -f "$assessment" ]] && return 1
+    grep -qE 'MS-[0-9]{4}' "$assessment" 2>/dev/null
+}
+
+get_meta_work_summary() {
+    # Output: "issues:N tasks:N"
+    # MS-0009: Fixed paths from .meta_marge/tracking/ to .meta_marge/system/tracking/
+    local issues=0 tasks=0
+    
+    local assessment=".meta_marge/system/tracking/assessment.md"
+    if [[ -f "$assessment" ]]; then
+        issues=$(grep -oE 'MS-[0-9]{4}' "$assessment" 2>/dev/null | wc -l | tr -d ' ')
+    fi
+    
+    local tasklist=".meta_marge/system/tracking/tasklist.md"
+    if [[ -f "$tasklist" ]]; then
+        tasks=$(grep -cE '\[\s*\]\s*\*\*\[MS-[0-9]{4}\]' "$tasklist" 2>/dev/null || echo 0)
+    fi
+    
+    echo "$issues $tasks"
+}
+
+initialize_meta() {
+    # Initialize .meta_marge/ for meta-development
+    # Args: $1 = "fresh" to reset (optional)
+    local fresh="${1:-}"
+    
+    # Check for existing .meta_marge with work
+    if [[ -d ".meta_marge" ]] && [[ "$fresh" != "fresh" ]]; then
+        if test_meta_has_work; then
+            local summary
+            summary=$(get_meta_work_summary)
+            local issues tasks
+            issues=$(echo "$summary" | awk '{print $1}')
+            tasks=$(echo "$summary" | awk '{print $2}')
+            
+            log_warn ".meta_marge/ exists with tracked work:"
+            echo "  - $issues issues in assessment.md"
+            echo "  - $tasks tasks in tasklist.md"
+            echo ""
+            echo "Options:"
+            echo "  * Continue using existing setup (recommended)"
+            echo "  * marge meta init --fresh   (start over, loses tracked work)"
+            echo ""
+            log_info "Keeping existing .meta_marge/"
+            return 0
+        else
+            log_info ".meta_marge/ already exists (no changes needed)"
+            return 0
+        fi
+    fi
+    
+    # Try to find convert-to-meta script (check local repo, then global install)
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    local convert_scripts=(
+        "$script_dir/../.dev/meta/convert-to-meta.sh"
+        "./.dev/meta/convert-to-meta.sh"
+        "$MARGE_HOME/shared/.dev/meta/convert-to-meta.sh"
+    )
+    
+    for convert_script in "${convert_scripts[@]}"; do
+        if [[ -f "$convert_script" ]]; then
+            log_info "Setting up .meta_marge/ (full meta-development environment)..."
+            local args=()
+            [[ "$fresh" == "fresh" ]] && args+=("-f")
+            bash "$convert_script" "${args[@]}"
+            return $?
+        fi
+    done
+    
+    # Fallback: script not found anywhere
+    # MS-0005: Fixed typo log_err -> log_error
+    log_error "convert-to-meta.sh not found"
+    log_error ""
+    log_error "Checked locations:"
+    for loc in "${convert_scripts[@]}"; do
+        log_error "  - $loc"
+    done
+    log_error ""
+    log_error "If you installed marge globally, your installation may be incomplete."
+    log_error "Try reinstalling: cli/install-global.sh --force"
+    return 1
+}
+
+show_meta_status() {
+    # Show .meta_marge/ status and tracked work
+    echo ""
+    echo "${BOLD}Meta-Marge Status${RESET}"
+    echo "─────────────────"
+    
+    if [[ ! -d ".meta_marge" ]]; then
+        log_warn ".meta_marge/ not initialized"
+        echo ""
+        echo "To set up meta-development:"
+        echo "  marge meta init"
+        return
+    fi
+    
+    echo "Folder: ${CYAN}.meta_marge/${RESET}"
+    
+    # Check for AGENTS.md
+    if [[ -f ".meta_marge/AGENTS.md" ]]; then
+        echo "AGENTS.md: ${GREEN}✓${RESET}"
+    else
+        echo "AGENTS.md: ${RED}✗ missing${RESET}"
+    fi
+    
+    # Show tracked work
+    local summary
+    summary=$(get_meta_work_summary)
+    local issues tasks
+    issues=$(echo "$summary" | awk '{print $1}')
+    tasks=$(echo "$summary" | awk '{print $2}')
+    
+    echo ""
+    echo "${BOLD}Tracked Work:${RESET}"
+    echo "  Issues: $issues"
+    echo "  Tasks:  $tasks"
+    
+    # Show workflow diagram
+    echo ""
+    echo "${BOLD}Workflow:${RESET}"
+    echo "  ┌─────────────────────────────────────────────────────────┐"
+    echo "  │  .meta_marge/AGENTS.md    <- Configuration (the guide)  │"
+    echo "  │         |                                               │"
+    echo "  │  AI audits marge-simpson/ <- Target of improvements     │"
+    echo "  │         |                                               │"
+    echo "  │  Changes made DIRECTLY to marge-simpson/                │"
+    echo "  │         |                                               │"
+    echo "  │  Work tracked in .meta_marge/tracking/             │"
+    echo "  └─────────────────────────────────────────────────────────┘"
+    echo ""
+}
+
+show_doctor() {
+    # Run diagnostic checks for Marge setup
+    echo ""
+    echo "${BOLD}Marge Doctor - Diagnostics${RESET}"
+    echo ""
+    
+    local warnings=0
+    local errors=0
+    
+    # Check engines
+    echo "${BOLD}Engines:${RESET}"
+    local engines=("claude" "opencode" "aider" "codex")
+    local any_engine=false
+    
+    for eng in "${engines[@]}"; do
+        if command -v "$eng" &>/dev/null; then
+            echo "  ${GREEN}✓${RESET} $eng (found)"
+            any_engine=true
+        else
+            echo "  ${RED}✗${RESET} $eng (not found)"
+        fi
+    done
+    
+    if [[ "$any_engine" == false ]]; then
+        ((errors++))
+    fi
+    
+    echo ""
+    echo "${BOLD}Config:${RESET}"
+    
+    # Check config file
+    local config_path=".marge/config.yaml"
+    if [[ -f "$config_path" ]]; then
+        # Basic YAML validation - check for colon-separated key:value pairs
+        local valid_yaml=true
+        while IFS= read -r line; do
+            # Skip empty lines and comments
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            # Check if line has key: format (basic YAML check)
+            if [[ ! "$line" =~ ^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*: ]]; then
+                valid_yaml=false
+                break
+            fi
+        done < "$config_path"
+        
+        if [[ "$valid_yaml" == true ]]; then
+            echo "  ${GREEN}✓${RESET} .marge/config.yaml (valid)"
+        else
+            echo "  ${RED}✗${RESET} .marge/config.yaml (invalid YAML)"
+            ((warnings++))
+        fi
+    else
+        echo "  ${YELLOW}-${RESET} .marge/config.yaml: not found"
+    fi
+    
+    # Check MARGE_HOME
+    if [[ -n "$MARGE_HOME" ]]; then
+        if [[ -d "$MARGE_HOME" ]]; then
+            echo "  ${GREEN}✓${RESET} MARGE_HOME: $MARGE_HOME"
+        else
+            echo "  ${RED}✗${RESET} MARGE_HOME: $MARGE_HOME (path not found)"
+            ((warnings++))
+        fi
+    else
+        echo "  ${YELLOW}-${RESET} MARGE_HOME: not set"
+    fi
+    
+    echo ""
+    echo "${BOLD}Files:${RESET}"
+    
+    # Check model_pricing.json
+    local pricing_paths=(
+        "./$MARGE_FOLDER/model_pricing.json"
+        "./model_pricing.json"
+        "$MARGE_HOME/shared/model_pricing.json"
+        "$MARGE_HOME/model_pricing.json"
+    )
+    local pricing_found=false
+    local pricing_valid=false
+    local pricing_path=""
+    
+    for path in "${pricing_paths[@]}"; do
+        if [[ -f "$path" ]]; then
+            pricing_found=true
+            pricing_path="$path"
+            # Validate JSON
+            if command -v jq &>/dev/null; then
+                if jq empty "$path" 2>/dev/null; then
+                    pricing_valid=true
+                fi
+            elif command -v python3 &>/dev/null; then
+                if python3 -c "import json; json.load(open('$path'))" 2>/dev/null; then
+                    pricing_valid=true
+                fi
+            else
+                # No JSON validator available, assume valid if file exists
+                pricing_valid=true
+            fi
+            break
+        fi
+    done
+    
+    if [[ "$pricing_found" == true ]]; then
+        if [[ "$pricing_valid" == true ]]; then
+            echo "  ${GREEN}✓${RESET} model_pricing.json (valid)"
+        else
+            echo "  ${RED}✗${RESET} model_pricing.json (invalid JSON)"
+            ((warnings++))
+        fi
+    else
+        echo "  ${YELLOW}-${RESET} model_pricing.json: not found"
+    fi
+    
+    # Check marge folder
+    if [[ -d "$MARGE_FOLDER" ]]; then
+        echo "  ${GREEN}✓${RESET} $MARGE_FOLDER/ folder exists"
+    else
+        echo "  ${YELLOW}-${RESET} $MARGE_FOLDER/ folder: not found (will use lite mode)"
+    fi
+    
+    echo ""
+    
+    # Summary
+    if [[ $errors -gt 0 ]]; then
+        local issue_word="issue"
+        [[ $errors -ne 1 ]] && issue_word="issues"
+        echo "Status: ${RED}Not ready${RESET} ($errors critical $issue_word)"
+        exit 1
+    elif [[ $warnings -gt 0 ]]; then
+        local warn_word="warning"
+        [[ $warnings -ne 1 ]] && warn_word="warnings"
+        echo "Status: ${GREEN}Ready to use${RESET} ($warnings $warn_word)"
+        exit 0
+    else
+        echo "Status: ${GREEN}Ready to use${RESET}"
+        exit 0
+    fi
+}
+
+remove_meta() {
+    # Remove .meta_marge/ folder
+    if [[ ! -d ".meta_marge" ]]; then
+        log_warn ".meta_marge/ folder not found"
+        return
+    fi
+    
+    if test_meta_has_work; then
+        local summary
+        summary=$(get_meta_work_summary)
+        local issues tasks
+        issues=$(echo "$summary" | awk '{print $1}')
+        tasks=$(echo "$summary" | awk '{print $2}')
+        
+        log_warn "This will delete tracked work:"
+        echo "  - $issues issues"
+        echo "  - $tasks tasks"
+        echo ""
+    fi
+    
+    read -r -p "Remove .meta_marge/ folder? [y/N] " REPLY
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf ".meta_marge"
+        log_success "Removed .meta_marge/"
+    else
+        log_info "Cancelled"
+    fi
+}
+
+invoke_meta_setup_prompt() {
+    # Prompt user to set up .meta_marge/ when running meta task without it
+    # Returns: 0 if setup completed, 1 if user declined
+    echo ""
+    log_warn "Meta-marge not set up yet."
+    echo ""
+    echo "Meta-development lets you improve Marge itself."
+    echo "This will create .meta_marge/ with the proper configuration."
+    echo ""
+    
+    read -r -p "Set up now? [Y/n] " REPLY
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        echo ""
+        echo "To set up later, run: ${CYAN}marge meta init${RESET}"
+        return 1
+    fi
+    
+    initialize_meta
+    return $?
+}
+
+parse_prd() {
+    local file="$1"
+    [[ ! -f "$file" ]] && return 1
+
+    grep -E "^### " "$file" | sed 's/^### //' | sed 's/^Task [0-9]*: //'
+}
+
+# Determine which AGENTS file to use (called before run_task sets final mode)
+get_agents_file() {
+    local workdir="${1:-.}"
+    
+    # If local .marge folder exists, always use full mode
+    if [[ -d "$workdir/$MARGE_FOLDER" ]]; then
+        echo "AGENTS.md"
+        return 0
+    fi
+    
+    # If --full flag specified, use full mode
+    if [[ "$FULL_MODE" == true ]]; then
+        echo "AGENTS.md"
+        return 0
+    fi
+    
+    # Default to full mode - lite is determined per-task in run_task
+    echo "AGENTS.md"
+}
+
+# Check if task is simple enough for lite mode
+is_simple_task() {
+    local task="$1"
+    local task_lower
+    task_lower=$(echo "$task" | tr '[:upper:]' '[:lower:]' | xargs)
+    
+    # Simple patterns that qualify for lite mode
+    if echo "$task_lower" | grep -qE '^fix\s+(typo|typos|spelling|whitespace|indent)'; then return 0; fi
+    if echo "$task_lower" | grep -qE '^(add|update|change)\s+(comment|version|license|copyright)'; then return 0; fi
+    if echo "$task_lower" | grep -qE '^rename\s+\w+\s+to\s+\w+$'; then return 0; fi
+    if echo "$task_lower" | grep -qE '^remove\s+(unused|dead)\s+(code|import|variable)'; then return 0; fi
+    if echo "$task_lower" | grep -qE '^format\s+'; then return 0; fi
+    if echo "$task_lower" | grep -qE '^lint\s+fix'; then return 0; fi
+    # Single word tasks
+    if [[ "$task_lower" =~ ^[a-z]+$ ]]; then return 0; fi
+    
+    return 1
+}
+
+run_task() {
+    local task="$1" num="${2:-1}" workdir="${3:-.}"
+
+    log_info "Task $num: $task"
+    save_progress "$num" "running"
+
+    # Determine mode: lite vs full
+    local agents_file
+    agents_file=$(get_agents_file "$workdir")
+    local has_local_marge=false
+    [[ -d "$workdir/$MARGE_FOLDER" ]] && has_local_marge=true
+    
+    # Determine mode: full (default) vs lite (simple tasks only)
+    local use_lite_mode=false
+    
+    # Use lite mode only if: task is simple AND no local .marge AND not forcing full
+    if is_simple_task "$task" && [[ "$has_local_marge" == false ]] && [[ "$FULL_MODE" != true ]]; then
+        use_lite_mode=true
+        LITE_MODE=true
+        log_debug "Using lite mode (simple task detected)"
+    elif [[ "$has_local_marge" == false ]] && [[ "$FULL_MODE" != true ]]; then
+        log_debug "Using full mode (no local .marge/ - tracking disabled)"
+    fi
+    
+    if [[ "$use_lite_mode" == true ]]; then
+        # Validate MARGE_HOME exists for lite mode
+        if [[ ! -d "$MARGE_HOME" ]]; then
+            log_error "MARGE_HOME not found: $MARGE_HOME"
+            log_error "Install marge globally first, or set MARGE_HOME to your installation."
+            return 1
+        fi
+        # Use global AGENTS-lite.md
+        local agents_path="$MARGE_HOME/shared/AGENTS-lite.md"
+        [[ ! -f "$agents_path" ]] && agents_path="$MARGE_HOME/AGENTS-lite.md"
+        
+        if [[ ! -f "$agents_path" ]]; then
+            log_error "AGENTS-lite.md not found in $MARGE_HOME"
+            log_error "Your marge installation may be incomplete. Try reinstalling."
+            return 1
+        fi
+        
+        local fast_suffix="$([[ "$FAST" == true ]] && echo ' [FAST MODE: Skip verification steps]')"
+        local auto_suffix="$([[ "$AUTO" == true ]] && echo $'\n[AUTO MODE: Proceed autonomously without asking for user confirmation. Make decisions using best judgment.]')"
+        local prompt="Read and follow these rules:
+
+$(cat "$agents_path" 2>/dev/null || echo "Be concise. Do the task directly. List files modified.")
+
+Task: ${task}${fast_suffix}${auto_suffix}"
+    else
+        # Full mode - ensure .marge folder exists (only if has local tracking)
+        if [[ "$has_local_marge" == false ]] && [[ -x "$MARGE_HOME/marge-init" ]]; then
+            # No local .marge - use AGENTS.md from global but no local tracking
+            :
+        fi
+        
+        local fast_suffix="$([[ "$FAST" == true ]] && echo $'\n\n[FAST MODE: Skip verification steps - do not run verify.ps1/verify.sh]')"
+        local auto_suffix="$([[ "$AUTO" == true ]] && echo $'\n[AUTO MODE: Proceed autonomously without asking for user confirmation. Make decisions using best judgment.]')"
+        local prompt="Read the AGENTS.md file in the $MARGE_FOLDER folder and follow it.
+
+Instruction:
+- ${task}$([[ "$LOOP" == true ]] && echo " Loop until complete.")${fast_suffix}${auto_suffix}
+
+After finished, list remaining unchecked items in $MARGE_FOLDER/tracking/tasklist.md."
+    fi
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "${CYAN}Mode:${RESET} $([[ "$LITE_MODE" == true ]] && echo 'lite' || echo 'full')"
+        echo "${CYAN}Would run:${RESET} $(build_engine_cmd "$ENGINE") \"<prompt>\""
+        return 0
+    fi
+
+    local cmd=$(build_engine_cmd "$ENGINE")
+    local retry=0
+    local output_file="/tmp/marge_output_$$.txt"
+    local ai_pid
+
+    # Cleanup temp file on exit/interrupt/error
+    trap 'rm -f "$output_file" 2>/dev/null' EXIT
+
+    while [[ $retry -lt $MAX_RETRIES ]]; do
+        log_debug "Attempt $((retry+1))/$MAX_RETRIES"
+        log_debug "Command: $cmd \"<prompt>\""
+        log_debug "Workdir: $workdir"
+
+        # Run AI command in background
+        (cd "$workdir" && eval "$cmd" '"$prompt"' > "$output_file" 2>&1) &
+        ai_pid=$!
+        log_debug "Started PID: $ai_pid"
+
+        # Show spinner while AI is running
+        show_spinner "$output_file" "$task" "$ai_pid"
+
+        # Wait for AI and get exit status
+        wait "$ai_pid"
+        local exit_code=$?
+        log_debug "Exit code: $exit_code"
+
+        # Show output (always show if it exists and is non-empty, for debugging)
+        if [[ -f "$output_file" ]] && [[ -s "$output_file" ]]; then
+            [[ "$VERBOSE" == true ]] && cat "$output_file"
+            log_debug "Output file size: $(wc -c < "$output_file") bytes"
+        else
+            log_debug "Output file empty or missing"
+        fi
+
+        if [[ $exit_code -eq 0 ]]; then
+            log_success "Task $num completed"
+            parse_token_usage "$output_file"
+            auto_commit "$num"
+            save_progress "$num" "completed"
+            rm -f "$output_file"
+            return 0
+        fi
+
+        ((retry++))
+        [[ $retry -lt $MAX_RETRIES ]] && sleep "$RETRY_DELAY"
+    done
+
+    save_progress "$num" "failed"
+    log_error "Task failed after $MAX_RETRIES retries"
+    # Show last 10 lines of output to help user understand the failure
+    if [[ -f "$output_file" ]] && [[ -s "$output_file" ]]; then
+        log_error "Last 10 lines of output:"
+        echo "----------------------------------------" >&2
+        tail -n 10 "$output_file" >&2
+        echo "----------------------------------------" >&2
+    fi
+    rm -f "$output_file"
+    return 1
+}
+
+run_task_parallel() {
+    local task="$1" num="$2" slug="$3"
+    local workdir
+
+    workdir=$(setup_worktree "$slug") || {
+        log_error "Failed to setup worktree for $slug"
+        return 1
+    }
+
+    log_info "Running task $num in worktree: $workdir"
+    run_task "$task" "$num" "$workdir"
+}
+
+run_prd() {
+    local tasks=()
+    local pids=()
+    local project_type
+
+    project_type=$(detect_project)
+    log_debug "Detected project type: $project_type"
+
+    while IFS= read -r task; do
+        [[ -n "$task" ]] && tasks+=("$task")
+    done < <(parse_prd "$PRD_FILE")
+
+    local count=${#tasks[@]}
+
+    if [[ $count -eq 0 ]]; then
+        log_warn "No tasks in $PRD_FILE"
+        return 0
+    fi
+
+    echo ""
+    echo "${BOLD}Marge v$VERSION${RESET}"
+    echo "Found ${CYAN}$count${RESET} tasks"
+    echo "Engine: ${CYAN}$ENGINE${RESET}"
+    echo "Folder: ${CYAN}$MARGE_FOLDER${RESET}"
+    [[ "$PARALLEL" == true ]] && echo "Mode: ${CYAN}parallel${RESET} (max $MAX_PARALLEL)"
+    echo ""
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "${BOLD}Tasks:${RESET}"
+        for i in "${!tasks[@]}"; do
+            echo "  $((i+1)). ${tasks[$i]}"
+        done
+        return 0
+    fi
+
+    if [[ "$PARALLEL" == true ]]; then
+        local running=0
+        for i in "${!tasks[@]}"; do
+            local task="${tasks[$i]}"
+            local num=$((i+1))
+            local slug=$(slugify "$task")
+
+            while [[ $running -ge $MAX_PARALLEL ]]; do
+                wait -n 2>/dev/null || true
+                ((running--))
+            done
+
+            run_task_parallel "$task" "$num" "$slug" &
+            pids+=($!)
+            ((running++))
+        done
+
+        for pid in "${pids[@]}"; do
+            wait "$pid" 2>/dev/null || true
+        done
+
+        cleanup_worktrees
+    else
+        for task in "${tasks[@]}"; do
+            ((iteration++))
+
+            if [[ "$BRANCH_PER_TASK" == true ]]; then
+                local slug=$(slugify "$task")
+                git checkout -b "marge/$slug" 2>/dev/null || git checkout "marge/$slug" 2>/dev/null || true
+            fi
+
+            run_task "$task" "$iteration" || { [[ "$LOOP" != true ]] && break; }
+
+            is_task_complete && { log_success "All tasks complete!"; break; }
+            [[ $iteration -ge $MAX_ITER ]] && { log_warn "Max iterations"; break; }
+        done
+    fi
+
+    if [[ "$CREATE_PR" == true ]]; then
+        log_info "Creating PR..."
+        local pr_title="Marge: Completed $iteration tasks"
+        local pr_body="Automated PR by marge v$VERSION"
+        gh pr create --title "$pr_title" --body "$pr_body" 2>/dev/null || log_warn "PR creation failed"
+    fi
+
+    clear_progress
+    echo ""
+    print_session_summary "$iteration"
+    notify_done "Completed $iteration tasks"
+}
+
+print_session_summary() {
+    local iter_count="${1:-0}"
+    echo "${BOLD}═══════════════════════════════════════════════════${RESET}"
+    echo "${BOLD}Session Summary${RESET}"
+    echo "  Iterations: $iter_count"
+    echo "  Folder: $MARGE_FOLDER"
+
+    if [[ $total_input_tokens -gt 0 ]] || [[ $total_output_tokens -gt 0 ]]; then
+        # Calculate total cost
+        local input_rate=$DEFAULT_INPUT_RATE
+        local output_rate=$DEFAULT_OUTPUT_RATE
+
+        local pricing_file="./$MARGE_FOLDER/model_pricing.json"
+        [[ ! -f "$pricing_file" ]] && pricing_file="$MARGE_HOME/shared/model_pricing.json"
+
+        if [[ -f "$pricing_file" ]] && command -v jq &>/dev/null; then
+            local model_name="Claude Sonnet"
+            [[ "$MODEL" == *"opus"* ]] && model_name="Claude Opus"
+            local rates
+            rates=$(jq -r --arg m "$model_name" '.models[] | select(.name | contains($m)) | "\(.input_per_1m) \(.output_per_1m)"' "$pricing_file" 2>/dev/null | head -1) || true
+            if [[ -n "$rates" ]]; then
+                input_rate=$(echo "$rates" | awk '{print $1}')
+                output_rate=$(echo "$rates" | awk '{print $2}')
+            fi
+        fi
+
+        local total_cost
+        total_cost=$(awk -v it="$total_input_tokens" -v ot="$total_output_tokens" -v ir="$input_rate" -v or="$output_rate" \
+            'BEGIN {printf "%.4f", (it * ir + ot * or) / 1000000}')
+
+        echo "  ${CYAN}Total Tokens:${RESET} ${total_input_tokens} in / ${total_output_tokens} out"
+        echo "  ${CYAN}Total Cost:${RESET} \$${total_cost}"
+    fi
+    echo "${BOLD}═══════════════════════════════════════════════════${RESET}"
+}
+
+run_single() {
+    local task="$1"
+    
+    # Pre-check mode for display
+    local mode_display="full"
+    if [[ ! -d "./$MARGE_FOLDER" ]] && [[ "$FULL_MODE" != true ]]; then
+        mode_display="lite"
+    fi
+
+    echo ""
+    echo "${BOLD}Marge v$VERSION${RESET} - Single task"
+    echo "Task: ${CYAN}$task${RESET}"
+    echo "Mode: ${CYAN}$mode_display${RESET}"
+    [[ "$mode_display" == "full" ]] && echo "Folder: ${CYAN}$MARGE_FOLDER${RESET}"
+    echo ""
+
+    if [[ "$LOOP" == true ]]; then
+        while [[ $iteration -lt $MAX_ITER ]]; do
+            ((iteration++))
+            echo "${BOLD}=== Iteration $iteration / $MAX_ITER ===${RESET}"
+
+            run_task "$task" "$iteration" || true
+            is_task_complete && { log_success "Complete!"; break; }
+
+            sleep 1
+        done
+    else
+        iteration=1
+        run_task "$task" 1
+    fi
+
+    echo ""
+    print_session_summary "$iteration"
+    notify_done "Task complete"
+}
+
+init_config() {
+    # MS-0007: Check for --help flag
+    if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+        cat <<'HELP'
+
+marge init - Initialize Marge in current project
+
+USAGE:
+  marge init              Create .marge/ folder with default config
+
+CREATES:
+  .marge/config.yaml      Project configuration
+  system/tracking/PRD.md  Task list template (if not exists)
+
+NOTE:
+  .marge/ should be added to .gitignore (runtime artifacts)
+  system/tracking/ is your work tracking (can be committed)
+HELP
+        return 0
+    fi
+    
+    mkdir -p .marge
+    # MS-0006: Create system/tracking/ not tracking/
+    mkdir -p system/tracking
+    cat > .marge/config.yaml <<EOF
+engine: claude
+model: ""
+max_iterations: 20
+max_retries: 3
+auto_commit: true
+folder: .marge
+EOF
+
+    # MS-0006: Use correct path system/tracking/PRD.md
+    [[ ! -f "system/tracking/PRD.md" ]] && cat > system/tracking/PRD.md <<'EOF'
+# PRD
+
+### Task 1: Setup
+- [ ] Initialize project
+
+### Task 2: Implementation
+- [ ] Build features
+
+### Task 3: Testing
+- [ ] Write tests
+EOF
+
+    log_success "Initialized .marge/ and system/tracking/"
+}
+
+# Load config before parsing args (CLI overrides config)
+load_config
+
+# Parse args
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --auto) AUTO=true; shift ;;
+        --dry-run) DRY_RUN=true; shift ;;
+        --model)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                log_error "--model requires a value"
+                exit 1
+            fi
+            MODEL="$2"; shift 2 ;;
+        --engine)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                log_error "--engine requires a value"
+                exit 1
+            fi
+            ENGINE="$2"
+            case "$ENGINE" in
+                claude|opencode|codex|aider) ;;
+                *) log_error "Unknown engine '$ENGINE'. Valid engines: claude, opencode, codex, aider"; exit 1 ;;
+            esac
+            shift 2
+            ;;
+        --folder)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                log_error "--folder requires a value"
+                exit 1
+            fi
+            # Security: Prevent path traversal outside project
+            if [[ "$2" == /* ]] || [[ "$2" == \\* ]] || [[ "$2" == ../* ]] || [[ "$2" == */../* ]] || [[ "$2" == */.. ]] || [[ "$2" == .. ]]; then
+                log_error "--folder must be a relative path within the project (got: $2)"
+                exit 1
+            fi
+            MARGE_FOLDER="$2"; shift 2 ;;
+        --fast) FAST=true; shift ;;
+        --full) FULL_MODE=true; shift ;;
+        --loop) LOOP=true; shift ;;
+        --max-iterations)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                log_error "--max-iterations requires a value"
+                exit 1
+            fi
+            validate_positive_int "$2" "--max-iterations" || exit 1; MAX_ITER="$2"; shift 2 ;;
+        --max-retries)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                log_error "--max-retries requires a value"
+                exit 1
+            fi
+            validate_positive_int "$2" "--max-retries" || exit 1; MAX_RETRIES="$2"; shift 2 ;;
+        --no-commit) AUTO_COMMIT=false; shift ;;
+        --parallel) PARALLEL=true; shift ;;
+        --max-parallel)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                log_error "--max-parallel requires a value"
+                exit 1
+            fi
+            validate_positive_int "$2" "--max-parallel" || exit 1; MAX_PARALLEL="$2"; shift 2 ;;
+        --branch-per-task) BRANCH_PER_TASK=true; shift ;;
+        --create-pr) CREATE_PR=true; shift ;;
+        -v|--verbose) VERBOSE=true; shift ;;
+        --version) echo "marge $VERSION"; exit 0 ;;
+        -h|--help|help) print_usage; exit 0 ;;
+        init)
+            # MS-0007: Check for --help flag after init
+            if [[ "${2:-}" == "--help" || "${2:-}" == "-h" ]]; then
+                init_config --help
+            else
+                init_config
+            fi
+            exit 0
+            ;;
+        clean)
+            if [[ -d ".marge" ]]; then
+                read -p "Remove .marge/ folder? [y/N] " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    rm -rf ".marge"
+                    log_success "Removed .marge/"
+                else
+                    log_info "Cancelled"
+                fi
+            else
+                log_warn ".marge/ folder not found"
+            fi
+            exit 0
+            ;;
+        meta)
+            # Meta-marge subcommands (MS-0015)
+            shift
+            case "${1:-}" in
+                init)
+                    # Check for --fresh flag
+                    if [[ "${2:-}" == "--fresh" ]] || [[ "${2:-}" == "-f" ]]; then
+                        initialize_meta "fresh"
+                    else
+                        initialize_meta
+                    fi
+                    exit $?
+                    ;;
+                fresh)
+                    # Alias: marge meta fresh = marge meta init --fresh
+                    initialize_meta "fresh"
+                    exit $?
+                    ;;
+                status)
+                    show_meta_status
+                    exit 0
+                    ;;
+                clean)
+                    remove_meta
+                    exit 0
+                    ;;
+                *)
+                    # Running a task with meta folder
+                    # Check if .meta_marge exists, prompt if not
+                    if [[ ! -d ".meta_marge" ]]; then
+                        invoke_meta_setup_prompt || exit 0
+                    fi
+                    MARGE_FOLDER=".meta_marge"
+                    # Don't shift - the remaining arg is the task
+                    ;;
+            esac
+            ;;
+        status)
+            echo "${BOLD}Marge Status${RESET}"
+            echo "Project type: $(detect_project)"
+            echo "Folder: $MARGE_FOLDER"
+            [[ -f "$PROGRESS_FILE" ]] && {
+                echo "Progress file: $PROGRESS_FILE"
+                cat "$PROGRESS_FILE"
+            } || echo "No active progress"
+            [[ -f "$PRD_FILE" ]] && echo "PRD tasks: $(parse_prd "$PRD_FILE" | wc -l)"
+            exit 0
+            ;;
+        doctor) show_doctor ;; # exit is in show_doctor
+        config) [[ -f .marge/config.yaml ]] && cat .marge/config.yaml; exit 0 ;;
+        resume)
+            load_progress && {
+                log_info "Resuming from iteration $iteration"
+            } || log_warn "No progress to resume"
+            shift
+            ;;
+        -*)
+            log_error "Unknown option: $1"
+            echo "Run 'marge --help' for usage information." >&2
+            exit 1
+            ;;
+        *) POSITIONAL+=("$1"); shift ;;
+    esac
+done
+
+check_engine "$ENGINE" || exit 1
+
+# Set PROGRESS_FILE after arg parsing to respect --folder (MS-0008 fix)
+PROGRESS_FILE="$MARGE_FOLDER/progress.txt"
+
+if [[ ${#POSITIONAL[@]} -gt 0 ]]; then
+    # Task chaining: run each task sequentially
+    if [[ ${#POSITIONAL[@]} -gt 1 ]]; then
+        echo ""
+        echo "${BOLD}Marge v$VERSION${RESET} - Task chain (${#POSITIONAL[@]} tasks)"
+        echo "Folder: ${CYAN}$MARGE_FOLDER${RESET}"
+        echo ""
+        
+        task_num=0
+        for task in "${POSITIONAL[@]}"; do
+            ((task_num++))
+            echo "${BOLD}=== Task $task_num/${#POSITIONAL[@]}: $task ===${RESET}"
+            iteration=1
+            run_task "$task" "$task_num" || {
+                log_error "Task $task_num failed, stopping chain"
+                break
+            }
+            echo ""
+        done
+        
+        print_session_summary "$task_num"
+        notify_done "Completed $task_num tasks"
+    else
+        run_single "${POSITIONAL[0]}"
+    fi
+else
+    run_prd
+fi

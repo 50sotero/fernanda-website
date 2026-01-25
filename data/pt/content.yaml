@@ -1,0 +1,108 @@
+hero:
+  greeting: "Olá, sou a Fernanda"
+  tagline: "Psicóloga | Terapia Cognitivo-Comportamental"
+  description: "Psicóloga brasileira atendendo pacientes na Europa, América do Norte e América do Sul. Ofereço atendimento online em português para brasileiros que vivem no exterior, ajudando-os a superar os desafios da vida longe de casa."
+
+about:
+  title: "Sobre Mim"
+  paragraphs:
+    - "Sou psicóloga brasileira formada pela Universidade Federal de Alagoas (UFAL), especializada em Terapia Cognitivo-Comportamental (TCC). Minha missão é oferecer atendimento psicológico de qualidade para pacientes brasileiros onde quer que estejam no mundo."
+    - "Viver no exterior traz desafios únicos—adaptação a uma nova cultura, lidar com a distância da família, construir uma nova rede social. Eu entendo essas experiências e ofereço um espaço seguro onde você pode se expressar na sua língua nativa."
+    - "Através de técnicas baseadas em evidências, ajudo meus pacientes a desenvolver habilidades de regulação emocional, superar ansiedade e depressão, e construir uma vida mais plena."
+  highlights:
+    - icon: "🌍"
+      title: "Alcance Global"
+      description: "Sessões online para brasileiros na Europa, América do Norte e América do Sul"
+    - icon: "🧠"
+      title: "Especialista em TCC"
+      description: "Abordagem baseada em evidências com resultados comprovados"
+    - icon: "💬"
+      title: "Português Nativo"
+      description: "Terapia na sua língua, respeitando sua cultura"
+
+approach:
+  title: "Minha Abordagem"
+  intro: "A Terapia Cognitivo-Comportamental (TCC) é uma forma estruturada e orientada a objetivos de psicoterapia que foca na relação entre pensamentos, sentimentos e comportamentos. É um dos tratamentos mais pesquisados e eficazes para uma ampla gama de condições psicológicas."
+  methods:
+    - name: "Reestruturação Cognitiva"
+      description: "Identificar e desafiar padrões de pensamento que contribuem para o sofrimento emocional."
+    - name: "Ativação Comportamental"
+      description: "Engajar-se gradualmente em atividades que trazem significado e prazer para combater a depressão."
+    - name: "Técnicas de Exposição"
+      description: "Confrontar situações temidas de forma segura para reduzir a ansiedade e aumentar a confiança."
+    - name: "Integração de Mindfulness"
+      description: "Desenvolver consciência do momento presente para gerenciar o estresse e melhorar a regulação emocional."
+    - name: "Habilidades de Resolução de Problemas"
+      description: "Aprender abordagens estruturadas para navegar os desafios da vida de forma eficaz."
+    - name: "Prevenção de Recaídas"
+      description: "Construir habilidades e estratégias duradouras para manter o progresso após o término da terapia."
+
+map:
+  title: "Atuação Global"
+  subtitle: "Atendendo pacientes brasileiros em diferentes continentes através de sessões online seguras"
+  locations:
+    - name: "Irlanda"
+      flag: "🇮🇪"
+      x: 470
+      y: 135
+    - name: "Portugal"
+      flag: "🇵🇹"
+      x: 460
+      y: 160
+    - name: "Suécia"
+      flag: "🇸🇪"
+      x: 510
+      y: 110
+    - name: "França"
+      flag: "🇫🇷"
+      x: 480
+      y: 150
+    - name: "Estados Unidos"
+      flag: "🇺🇸"
+      x: 250
+      y: 200
+    - name: "Brasil"
+      flag: "🇧🇷"
+      x: 310
+      y: 330
+    - name: "Peru"
+      flag: "🇵🇪"
+      x: 260
+      y: 310
+
+instagram:
+  title: "Siga no Instagram"
+  subtitle: "Dicas, reflexões e conteúdo sobre saúde mental para brasileiros no exterior"
+  bio: "Psicóloga | TCC | Apoiando brasileiros pelo mundo"
+  posts: "50+"
+  followers: "1K+"
+  featured_posts:
+    - icon: "🧠"
+      topic: "Ansiedade"
+      caption: "Entendendo gatilhos de ansiedade"
+    - icon: "💭"
+      topic: "Pensamentos"
+      caption: "Dicas de reestruturação cognitiva"
+    - icon: "🌱"
+      topic: "Crescimento"
+      caption: "Jornada de desenvolvimento pessoal"
+    - icon: "🏠"
+      topic: "Saudade"
+      caption: "Lidando com a saudade de casa"
+    - icon: "💪"
+      topic: "Resiliência"
+      caption: "Construindo força emocional"
+    - icon: "🌍"
+      topic: "Exterior"
+      caption: "Vivendo longe de casa"
+
+cv_summary:
+  title: "Qualificações"
+  education:
+    degree: "Bacharelado em Psicologia"
+    institution: "Universidade Federal de Alagoas (UFAL)"
+  specialization: "Terapia Cognitivo-Comportamental (TCC)"
+
+contact:
+  title: "Vamos Conversar"
+  subtitle: "Pronta para iniciar sua jornada terapêutica? Entre em contato por email ou Instagram para agendar uma consulta."

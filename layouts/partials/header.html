@@ -1,0 +1,32 @@
+<header class="site-header">
+  <div class="container">
+    <nav class="nav">
+      <a href="{{ .Site.Home.RelPermalink }}" class="logo">
+        {{ .Site.Title }}
+      </a>
+      
+      <ul class="nav-links">
+        <li><a href="#about">{{ i18n "nav_about" }}</a></li>
+        <li><a href="#approach">{{ i18n "nav_approach" }}</a></li>
+        <li><a href="#global-practice">{{ i18n "nav_global" }}</a></li>
+        <li><a href="{{ relLangURL "cv/" }}">{{ i18n "nav_cv" }}</a></li>
+        <li><a href="#contact">{{ i18n "nav_contact" }}</a></li>
+      </ul>
+      
+      <div class="lang-switch">
+        {{ if .IsTranslated }}
+          {{ range .Translations }}
+            <a href="{{ .RelPermalink }}">{{ .Lang | upper }}</a>
+          {{ end }}
+        {{ end }}
+        <span class="current-lang">{{ .Lang | upper }}</span>
+      </div>
+      
+      <button class="mobile-menu-toggle" aria-label="{{ i18n "nav_menu" }}">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </nav>
+  </div>
+</header>

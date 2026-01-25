@@ -1,0 +1,966 @@
+@import 'variables';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: $font-sans;
+  font-size: $font-size-base;
+  line-height: 1.6;
+  color: $text-primary;
+  background-color: $background;
+}
+
+.container {
+  width: 100%;
+  max-width: $max-width;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+// Typography
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 { font-size: $font-size-4xl; }
+h2 { font-size: $font-size-3xl; }
+h3 { font-size: $font-size-xl; }
+
+@media (min-width: $breakpoint-md) {
+  h1 { font-size: $font-size-5xl; }
+  h2 { font-size: $font-size-4xl; }
+}
+
+a {
+  color: $primary-700;
+  text-decoration: none;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $primary-900;
+  }
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: $space-4;
+  color: $primary-800;
+}
+
+.section-subtitle {
+  text-align: center;
+  color: $text-secondary;
+  max-width: 600px;
+  margin: 0 auto $space-12;
+}
+
+// Buttons
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-3 $space-6;
+  font-size: $font-size-base;
+  font-weight: 500;
+  border-radius: $radius-md;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all $transition-fast;
+  text-decoration: none;
+
+  &-primary {
+    background-color: $primary-600;
+    color: $text-light;
+    border-color: $primary-600;
+
+    &:hover {
+      background-color: $primary-700;
+      border-color: $primary-700;
+      color: $text-light;
+    }
+  }
+
+  &-secondary {
+    background-color: transparent;
+    color: $primary-700;
+    border-color: $primary-300;
+
+    &:hover {
+      background-color: $primary-100;
+      border-color: $primary-400;
+    }
+  }
+
+  &-outline {
+    background-color: transparent;
+    color: $primary-700;
+    border-color: $primary-600;
+
+    &:hover {
+      background-color: $primary-600;
+      color: $text-light;
+    }
+  }
+}
+
+// Header
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  border-bottom: 1px solid $neutral-200;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+}
+
+.logo {
+  font-family: $font-serif;
+  font-size: $font-size-xl;
+  font-weight: 700;
+  color: $primary-800;
+}
+
+.nav-links {
+  display: none;
+  list-style: none;
+  gap: $space-6;
+
+  @media (min-width: $breakpoint-lg) {
+    display: flex;
+  }
+
+  a {
+    color: $text-secondary;
+    font-weight: 500;
+
+    &:hover {
+      color: $primary-700;
+    }
+  }
+
+  &.active {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: $space-6;
+    border-bottom: 1px solid $neutral-200;
+  }
+}
+
+.lang-switch {
+  display: flex;
+  gap: $space-2;
+  font-size: $font-size-sm;
+
+  .current-lang {
+    color: $primary-700;
+    font-weight: 600;
+  }
+
+  a {
+    color: $text-secondary;
+
+    &:hover {
+      color: $primary-700;
+    }
+  }
+}
+
+.mobile-menu-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: $space-2;
+
+  @media (min-width: $breakpoint-lg) {
+    display: none;
+  }
+
+  span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: $text-primary;
+    transition: all $transition-fast;
+  }
+
+  &.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+
+  &.active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  &.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+  }
+}
+
+// Hero
+.hero {
+  padding: $space-24 0 $space-16;
+  background: linear-gradient(135deg, $primary-100 0%, $background 100%);
+  margin-top: 70px;
+}
+
+.hero-content {
+  display: grid;
+  gap: $space-12;
+  align-items: center;
+
+  @media (min-width: $breakpoint-md) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.hero-title {
+  color: $primary-900;
+  margin-bottom: $space-4;
+}
+
+.hero-subtitle {
+  font-size: $font-size-xl;
+  color: $primary-700;
+  margin-bottom: $space-4;
+  font-weight: 500;
+}
+
+.hero-description {
+  color: $text-secondary;
+  margin-bottom: $space-8;
+  font-size: $font-size-lg;
+}
+
+.hero-cta {
+  display: flex;
+  gap: $space-4;
+  flex-wrap: wrap;
+}
+
+.hero-image {
+  display: flex;
+  justify-content: center;
+}
+
+.profile-photo {
+  width: 280px;
+  height: 280px;
+  border-radius: $radius-full;
+  overflow: hidden;
+  border: 4px solid $primary-300;
+  box-shadow: $shadow-lg, 0 0 0 8px rgba($primary-400, 0.2);
+
+  @media (min-width: $breakpoint-md) {
+    width: 320px;
+    height: 320px;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// About
+.about {
+  padding: $space-20 0;
+}
+
+.about-content {
+  display: grid;
+  gap: $space-12;
+
+  @media (min-width: $breakpoint-md) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.about-text p {
+  margin-bottom: $space-4;
+  color: $text-secondary;
+}
+
+.about-highlights {
+  display: grid;
+  gap: $space-6;
+}
+
+.highlight-card {
+  padding: $space-6;
+  background: $primary-50;
+  border-radius: $radius-lg;
+  border-left: 4px solid $primary-500;
+
+  .highlight-icon {
+    font-size: $font-size-2xl;
+    display: block;
+    margin-bottom: $space-3;
+  }
+
+  h3 {
+    font-size: $font-size-lg;
+    margin-bottom: $space-2;
+    color: $primary-800;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
+}
+
+// Approach
+.approach {
+  padding: $space-20 0;
+  background: $background-alt;
+}
+
+.approach-intro {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto $space-12;
+  color: $text-secondary;
+  font-size: $font-size-lg;
+}
+
+.approach-methods {
+  display: grid;
+  gap: $space-6;
+
+  @media (min-width: $breakpoint-md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: $breakpoint-lg) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.method-card {
+  padding: $space-6;
+  background: $background;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
+  transition: transform $transition-base, box-shadow $transition-base;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-lg;
+  }
+
+  h3 {
+    color: $primary-700;
+    margin-bottom: $space-3;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
+}
+
+// Global Practice / Map
+.global-practice {
+  padding: $space-20 0;
+}
+
+.world-map-container {
+  max-width: 900px;
+  margin: 0 auto $space-12;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-md;
+  background: $primary-50;
+
+  #world-map {
+    width: 100%;
+    height: 400px;
+
+    @media (min-width: $breakpoint-md) {
+      height: 450px;
+    }
+  }
+}
+
+// jsvectormap overrides
+.jvm-container {
+  touch-action: none;
+}
+
+.jvm-tooltip {
+  background: $primary-800 !important;
+  color: white !important;
+  font-family: $font-sans !important;
+  font-size: $font-size-sm !important;
+  padding: $space-2 $space-3 !important;
+  border-radius: $radius-md !important;
+  box-shadow: $shadow-lg !important;
+}
+
+.locations-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $space-4;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2 $space-4;
+  background: $primary-100;
+  border-radius: $radius-full;
+  font-size: $font-size-sm;
+
+  .location-flag {
+    font-size: $font-size-lg;
+  }
+}
+
+// Instagram Section
+.instagram-section {
+  padding: $space-20 0;
+  background: linear-gradient(135deg, $primary-50 0%, $primary-100 100%);
+}
+
+.instagram-card {
+  background: $background;
+  border-radius: $radius-lg;
+  padding: $space-8;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: $shadow-lg;
+  text-align: center;
+}
+
+.instagram-header {
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  margin-bottom: $space-6;
+}
+
+.instagram-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: $radius-full;
+  overflow: hidden;
+  border: 3px solid $primary-400;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.instagram-user {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+}
+
+.instagram-username {
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.instagram-badge {
+  color: $primary-600;
+  display: flex;
+  align-items: center;
+}
+
+.instagram-bio {
+  margin-bottom: $space-6;
+  
+  p {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    line-height: 1.5;
+  }
+}
+
+.instagram-stats {
+  display: flex;
+  justify-content: center;
+  gap: $space-8;
+  margin-bottom: $space-6;
+  padding: $space-4 0;
+  border-top: 1px solid $neutral-200;
+  border-bottom: 1px solid $neutral-200;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: $font-size-xl;
+  font-weight: 700;
+  color: $primary-700;
+}
+
+.stat-label {
+  font-size: $font-size-xs;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.instagram-follow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  width: 100%;
+  padding: $space-3 $space-6;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  color: white;
+  font-weight: 600;
+  border-radius: $radius-md;
+  text-decoration: none;
+  transition: all $transition-base;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+    color: white;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.instagram-layout {
+  display: grid;
+  gap: $space-8;
+  max-width: 900px;
+  margin: 0 auto;
+
+  @media (min-width: $breakpoint-md) {
+    grid-template-columns: 300px 1fr;
+    align-items: start;
+  }
+}
+
+.instagram-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $space-2;
+
+  @media (min-width: $breakpoint-md) {
+    gap: $space-3;
+  }
+}
+
+.instagram-post {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: $radius-md;
+  overflow: hidden;
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform $transition-base;
+  }
+
+  &:hover {
+    img {
+      transform: scale(1.05);
+    }
+
+    .post-overlay {
+      opacity: 1;
+    }
+
+    .post-placeholder {
+      background: $primary-600;
+    }
+  }
+}
+
+.post-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  background: $primary-500;
+  transition: background $transition-base;
+}
+
+.post-icon {
+  font-size: 2rem;
+
+  @media (min-width: $breakpoint-md) {
+    font-size: 2.5rem;
+  }
+}
+
+.post-topic {
+  color: white;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  @media (min-width: $breakpoint-md) {
+    font-size: $font-size-sm;
+  }
+}
+
+.post-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-2;
+  opacity: 0;
+  transition: opacity $transition-base;
+}
+
+.post-caption {
+  color: white;
+  font-size: $font-size-xs;
+  text-align: center;
+  line-height: 1.3;
+
+  @media (min-width: $breakpoint-md) {
+    font-size: $font-size-sm;
+  }
+}
+
+// CV Summary
+.cv-summary {
+  padding: $space-20 0;
+  background: $background-alt;
+  text-align: center;
+}
+
+.cv-highlights {
+  display: grid;
+  gap: $space-8;
+  max-width: 600px;
+  margin: 0 auto $space-8;
+
+  @media (min-width: $breakpoint-md) {
+    grid-template-columns: 1fr 1fr;
+    text-align: left;
+  }
+}
+
+.cv-education,
+.cv-specialization {
+  h3 {
+    color: $primary-700;
+    margin-bottom: $space-3;
+    font-size: $font-size-lg;
+  }
+}
+
+.cv-degree,
+.cv-focus {
+  font-weight: 500;
+  color: $text-primary;
+}
+
+.cv-institution {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+// Contact
+.contact {
+  padding: $space-20 0;
+  background: linear-gradient(135deg, $primary-800 0%, $primary-900 100%);
+  color: $text-light;
+
+  .section-title,
+  .section-subtitle {
+    color: $text-light;
+  }
+
+  .section-subtitle {
+    opacity: 0.9;
+  }
+}
+
+.contact-methods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $space-6;
+}
+
+.contact-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-8 $space-12;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: $radius-lg;
+  color: $text-light;
+  transition: all $transition-base;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-4px);
+    color: $text-light;
+  }
+
+  svg {
+    opacity: 0.9;
+  }
+
+  span {
+    font-weight: 500;
+  }
+}
+
+// Footer
+.site-footer {
+  padding: $space-12 0;
+  background: $neutral-900;
+  color: $neutral-400;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $space-8;
+  flex-wrap: wrap;
+  gap: $space-4;
+}
+
+.footer-name {
+  font-family: $font-serif;
+  font-size: $font-size-lg;
+  color: $text-light;
+}
+
+.footer-tagline {
+  font-size: $font-size-sm;
+}
+
+.footer-social a {
+  color: $neutral-400;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $primary-400;
+  }
+}
+
+.footer-bottom {
+  padding-top: $space-8;
+  border-top: 1px solid $neutral-800;
+  font-size: $font-size-sm;
+  text-align: center;
+}
+
+// CV Page
+.cv-page {
+  padding: $space-16 0;
+  margin-top: 70px;
+}
+
+.cv-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+.cv-header {
+  text-align: center;
+  margin-bottom: $space-12;
+  padding-bottom: $space-8;
+  border-bottom: 2px solid $primary-200;
+}
+
+.cv-name {
+  color: $primary-800;
+  margin-bottom: $space-2;
+}
+
+.cv-title {
+  font-size: $font-size-xl;
+  color: $primary-600;
+  margin-bottom: $space-2;
+}
+
+.cv-contact {
+  color: $text-secondary;
+}
+
+.cv-section {
+  margin-bottom: $space-10;
+
+  h2 {
+    font-size: $font-size-xl;
+    color: $primary-700;
+    margin-bottom: $space-6;
+    padding-bottom: $space-2;
+    border-bottom: 1px solid $primary-200;
+  }
+}
+
+.cv-entry {
+  margin-bottom: $space-6;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.cv-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: $space-2;
+  margin-bottom: $space-1;
+
+  h3 {
+    font-size: $font-size-lg;
+    font-family: $font-sans;
+    font-weight: 600;
+    color: $text-primary;
+  }
+}
+
+.cv-date {
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+
+.cv-institution,
+.cv-company,
+.cv-location {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+.cv-description {
+  margin-top: $space-2;
+  color: $text-secondary;
+}
+
+.cv-summary-text {
+  color: $text-secondary;
+  line-height: 1.8;
+}
+
+.cv-skills,
+.cv-languages {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-3;
+
+  li {
+    padding: $space-2 $space-4;
+    background: $primary-100;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+  }
+}
+
+.cv-actions {
+  display: flex;
+  justify-content: center;
+  gap: $space-4;
+  margin-top: $space-12;
+}
+
+// Print styles
+@media print {
+  .no-print,
+  .site-header,
+  .site-footer {
+    display: none !important;
+  }
+
+  .cv-page {
+    padding: 0;
+    margin-top: 0;
+  }
+
+  body {
+    font-size: 11pt;
+    color: black;
+    background: white;
+  }
+
+  .cv-container {
+    max-width: 100%;
+  }
+
+  .cv-section h2 {
+    color: black;
+    border-color: #ccc;
+  }
+
+  .cv-name {
+    color: black;
+  }
+
+  .cv-title {
+    color: #333;
+  }
+
+  .cv-skills li,
+  .cv-languages li {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+  }
+
+  a {
+    color: black;
+    text-decoration: none;
+  }
+}
