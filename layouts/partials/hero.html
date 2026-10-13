@@ -1,21 +1,78 @@
 {{ $content := index .Site.Data .Lang "content" }}
+{{ $cv := index .Site.Data .Lang "cv" }}
+{{ $greeting := replace $content.hero.greeting .Site.Params.author (printf "<em>%s</em>" .Site.Params.author) }}
 
 <section class="hero" id="hero">
   <div class="container">
     <div class="hero-content">
       <div class="hero-text">
-        <h1 class="hero-title">{{ $content.hero.greeting }}</h1>
-        <p class="hero-subtitle">{{ $content.hero.tagline }}</p>
-        <p class="hero-description">{{ $content.hero.description }}</p>
-        <div class="hero-cta">
-          <a href="#contact" class="btn btn-primary">{{ i18n "cta_contact" }}</a>
+        <span class="hero-eyebrow reveal"><span class="dot" aria-hidden="true"></span>{{ i18n "hero_eyebrow" }}</span>
+        <h1 class="hero-title reveal d-1">{{ $greeting | safeHTML }}</h1>
+        <p class="hero-subtitle reveal d-2">{{ $content.hero.tagline }}</p>
+        <p class="hero-description reveal d-2">{{ $content.hero.description }}</p>
+        <div class="hero-cta reveal d-3">
+          <a href="#contact" class="btn btn-primary">{{ i18n "cta_contact" }} {{ partial "icon-arrow.html" }}</a>
           <a href="#about" class="btn btn-secondary">{{ i18n "cta_learn_more" }}</a>
         </div>
+        <ul class="hero-chips reveal d-4">
+          <li>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            {{ i18n "hero_chip_cbt" }}
+          </li>
+          <li>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            {{ i18n "hero_chip_lang" }}
+          </li>
+          <li>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            {{ i18n "hero_chip_remote" }}
+          </li>
+        </ul>
       </div>
-      <div class="hero-image">
-        <div class="profile-photo">
-          <img src="/images/profile.png" alt="Fernanda - Psicóloga" loading="eager">
+
+      <div class="hero-visual reveal d-2">
+        <div class="portrait">
+          <div class="portrait-ring" aria-hidden="true"></div>
+          <div class="portrait-halo" aria-hidden="true"></div>
+          <div class="portrait-frame">
+            <img src="/images/profile.png" alt="{{ .Site.Params.author }} – {{ i18n "footer_tagline" }}" width="420" height="420" loading="eager" fetchpriority="high">
+          </div>
+
+          <div class="float-card float-card--a">
+            <span class="float-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/></svg>
+            </span>
+            <span>
+              <strong>{{ i18n "badge_online_title" }}</strong>
+              <span>{{ i18n "badge_online_sub" }}</span>
+            </span>
+          </div>
+
+          <div class="float-card float-card--b">
+            <span class="float-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.2 4 2.5 5.3.9.9 1.5 1.6 1.5 2.7h6c0-1.1.6-1.8 1.5-2.7C17.8 13 19 11.5 19 9a7 7 0 0 0-7-7z"/><path d="M9 21h6"/></svg>
+            </span>
+            <span>
+              <strong>{{ i18n "badge_cbt_title" }}</strong>
+              <span>{{ i18n "badge_cbt_sub" }}</span>
+            </span>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <div class="hero-stats reveal d-3">
+      <div class="stat">
+        <span class="stat-value">{{ len $content.map.locations }}</span>
+        <span class="stat-label">{{ i18n "stat_countries" }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ len $cv.languages }}</span>
+        <span class="stat-label">{{ i18n "stat_languages" }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">100%</span>
+        <span class="stat-label">{{ i18n "stat_online" }}</span>
       </div>
     </div>
   </div>

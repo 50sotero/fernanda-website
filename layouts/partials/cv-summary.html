@@ -1,26 +1,35 @@
 {{ $content := index .Site.Data .Lang "content" }}
 
-<section class="cv-summary" id="cv">
+<section class="cv-summary section" id="cv">
   <div class="container">
-    <h2 class="section-title">{{ $content.cv_summary.title }}</h2>
-    
-    <div class="cv-highlights">
-      <div class="cv-education">
-        <h3>{{ i18n "cv_education" }}</h3>
-        <div class="cv-item">
-          <p class="cv-degree">{{ $content.cv_summary.education.degree }}</p>
-          <p class="cv-institution">{{ $content.cv_summary.education.institution }}</p>
+    <div class="cv-summary-grid">
+      <div class="reveal">
+        <div class="section-head">
+          <span class="eyebrow">{{ i18n "eyebrow_cv" }}</span>
+          <h2 class="section-title">{{ $content.cv_summary.title }}</h2>
+          <p class="section-lede">{{ (index .Site.Data .Lang "cv").summary }}</p>
         </div>
+        <a href="{{ relLangURL "cv/" }}" class="btn btn-outline">{{ i18n "cv_view_full" }} {{ partial "icon-arrow.html" }}</a>
       </div>
-      
-      <div class="cv-specialization">
-        <h3>{{ i18n "cv_specialization" }}</h3>
-        <div class="cv-item">
-          <p class="cv-focus">{{ $content.cv_summary.specialization }}</p>
+
+      <div class="cv-tiles">
+        <div class="cv-tile reveal d-1">
+          <span class="cv-tile-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>
+          </span>
+          <h3>{{ i18n "cv_education" }}</h3>
+          <p class="cv-tile-value">{{ $content.cv_summary.education.degree }}</p>
+          <p class="cv-tile-sub">{{ $content.cv_summary.education.institution }}</p>
+        </div>
+        <div class="cv-tile reveal d-2">
+          <span class="cv-tile-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3"/><path d="M12 18v3"/><path d="m5.6 5.6 2.1 2.1"/><path d="m16.3 16.3 2.1 2.1"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="m5.6 18.4 2.1-2.1"/><path d="m16.3 7.7 2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+          <h3>{{ i18n "cv_specialization" }}</h3>
+          <p class="cv-tile-value">{{ $content.cv_summary.specialization }}</p>
+          <p class="cv-tile-sub">{{ i18n "hero_chip_cbt" }}</p>
         </div>
       </div>
     </div>
-    
-    <a href="{{ relLangURL "cv/" }}" class="btn btn-outline">{{ i18n "cv_view_full" }}</a>
   </div>
 </section>

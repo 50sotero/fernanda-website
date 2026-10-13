@@ -42,33 +42,54 @@ map:
   subtitle: "Serving Brazilian patients across continents through secure online sessions"
   locations:
     - name: "Ireland"
+      code: "IE"
       flag: "🇮🇪"
-      x: 470
-      y: 135
+      lat: 53.1424
+      lng: -7.6921
+      side: "left"
+      group: "Europe"
     - name: "Portugal"
+      code: "PT"
       flag: "🇵🇹"
-      x: 460
-      y: 160
-    - name: "Sweden"
-      flag: "🇸🇪"
-      x: 510
-      y: 110
+      lat: 39.3999
+      lng: -8.2245
+      side: "bottom"
+      group: "Europe"
     - name: "France"
+      code: "FR"
       flag: "🇫🇷"
-      x: 480
-      y: 150
+      lat: 46.2276
+      lng: 2.2137
+      side: "right"
+      group: "Europe"
+    - name: "Sweden"
+      code: "SE"
+      flag: "🇸🇪"
+      lat: 60.1282
+      lng: 18.6435
+      side: "right"
+      group: "Europe"
     - name: "United States"
+      code: "US"
       flag: "🇺🇸"
-      x: 250
-      y: 200
+      lat: 39.8283
+      lng: -98.5795
+      side: "right"
+      group: "North America"
     - name: "Brazil"
+      code: "BR"
       flag: "🇧🇷"
-      x: 310
-      y: 330
+      lat: -14.235
+      lng: -51.9253
+      side: "right"
+      group: "South America"
     - name: "Peru"
+      code: "PE"
       flag: "🇵🇪"
-      x: 260
-      y: 310
+      lat: -9.19
+      lng: -75.0152
+      side: "left"
+      group: "South America"
 
 instagram:
   title: "Follow on Instagram"

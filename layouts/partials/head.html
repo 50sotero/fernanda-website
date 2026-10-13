@@ -1,8 +1,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="{{ .Params.description | default .Site.Params.description }}">
+{{- $description := .Params.description | default .Site.Params.description -}}
+<meta name="description" content="{{ $description }}">
+<meta name="theme-color" content="#7a553d">
+<meta name="color-scheme" content="light">
 
 <title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+
+<script>document.documentElement.classList.remove('no-js');</script>
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' ry='20' fill='%237a553d'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-family='Georgia,serif' font-style='italic' font-size='40' fill='%23fbf8f4'%3EF%3C/text%3E%3C/svg%3E">
 
 {{ $scss := resources.Get "scss/main.scss" }}
 {{ $style := $scss | toCSS (dict "outputStyle" "compressed") }}
@@ -10,9 +17,27 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..600,0..100;1,9..144,400..600,0..100&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<meta property="og:title" content="{{ .Title }}">
-<meta property="og:description" content="{{ .Params.description | default .Site.Params.description }}">
+{{- range .AllTranslations }}
+<link rel="alternate" hreflang="{{ .Lang }}" href="{{ .RelPermalink }}">
+{{- end }}
+
+<meta property="og:title" content="{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}">
+<meta property="og:description" content="{{ $description }}">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="{{ .Lang }}">
+<meta property="og:image" content="{{ "images/profile.png" | absURL }}">
+<meta name="twitter:card" content="summary">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": {{ .Site.Params.author | jsonify }},
+  "jobTitle": {{ i18n "footer_tagline" | jsonify }},
+  "description": {{ $description | jsonify }},
+  "image": {{ "images/profile.png" | absURL | jsonify }},
+  "sameAs": [{{ .Site.Params.instagram | jsonify }}]
+}
+</script>

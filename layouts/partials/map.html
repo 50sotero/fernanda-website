@@ -1,94 +1,136 @@
 {{ $content := index .Site.Data .Lang "content" }}
+{{ $locations := $content.map.locations }}
+{{ $groups := slice }}
+{{ range $locations }}{{ $groups = $groups | append .group }}{{ end }}
+{{ $groups = uniq $groups }}
 
-<section class="global-practice" id="global-practice">
+<section class="global-practice section" id="global-practice">
   <div class="container">
-    <h2 class="section-title">{{ $content.map.title }}</h2>
-    <p class="section-subtitle">{{ $content.map.subtitle }}</p>
-    
-    <div class="world-map-container">
-      <div id="world-map"></div>
+    <div class="section-head is-centered reveal">
+      <span class="eyebrow">{{ i18n "eyebrow_global" }}</span>
+      <h2 class="section-title">{{ $content.map.title }}</h2>
+      <p class="section-lede">{{ $content.map.subtitle }}</p>
     </div>
-    
-    <div class="locations-list">
-      {{ range $content.map.locations }}
-        <div class="location-item">
-          <span class="location-flag">{{ .flag }}</span>
-          <span class="location-name">{{ .name }}</span>
+
+    <div class="map-card reveal d-1" id="map-card">
+      <div class="map-stage">
+        <div id="world-map" role="img" aria-label="{{ $content.map.title }}"></div>
+        <div class="map-pins" aria-hidden="true">
+          {{ range $i, $loc := $locations }}
+            <div class="map-pin" data-code="{{ $loc.code }}" data-lat="{{ $loc.lat }}" data-lng="{{ $loc.lng }}" data-side="{{ $loc.side | default "right" }}" style="--d: {{ mul $i 0.35 }}s" hidden>
+              <span class="map-pin-pulse"></span>
+              <span class="map-pin-dot"></span>
+              <span class="map-pin-label"><span class="map-pin-flag">{{ $loc.flag }}</span>{{ $loc.name }}</span>
+            </div>
+          {{ end }}
+        </div>
+      </div>
+      <div class="map-legend">
+        <span class="legend-swatch"></span>
+        <span>{{ i18n "map_legend" }}</span>
+        <span class="legend-count">{{ len $locations }}</span>
+      </div>
+    </div>
+
+    <div class="locations-groups">
+      {{ range $gi, $g := $groups }}
+        {{ $items := where $locations "group" $g }}
+        <div class="location-group reveal d-{{ add $gi 1 }}">
+          <h3><span>{{ $g }}</span><span class="count">{{ len $items }}</span></h3>
+          <ul>
+            {{ range $items }}
+              <li>
+                <button type="button" class="location-item" data-code="{{ .code }}">
+                  <span class="location-flag" aria-hidden="true">{{ .flag }}</span>
+                  <span class="location-name">{{ .name }}</span>
+                </button>
+              </li>
+            {{ end }}
+          </ul>
         </div>
       {{ end }}
     </div>
   </div>
 </section>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap/dist/css/jsvectormap.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jsvectormap"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/maps/world.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1/dist/jsvectormap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1/dist/jsvectormap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1/dist/maps/world.js" defer></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const map = new jsVectorMap({
+document.addEventListener('DOMContentLoaded', function () {
+  var card = document.getElementById('map-card');
+  var mapEl = document.getElementById('world-map');
+  var pins = Array.prototype.slice.call(card.querySelectorAll('.map-pin'));
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.location-item[data-code]'));
+  var codes = pins.map(function (p) { return p.getAttribute('data-code'); });
+
+  // Chip <-> pin <-> country highlighting works even if the map library fails to load.
+  function setActive(code, on) {
+    pins.concat(chips).forEach(function (el) {
+      if (el.getAttribute('data-code') === code) el.classList.toggle('is-active', on);
+    });
+    var region = mapEl.querySelector('path[data-code="' + code + '"]');
+    if (region) region.classList.toggle('is-active', on);
+  }
+  pins.concat(chips).forEach(function (el) {
+    var code = el.getAttribute('data-code');
+    ['mouseenter', 'focus'].forEach(function (ev) { el.addEventListener(ev, function () { setActive(code, true); }); });
+    ['mouseleave', 'blur'].forEach(function (ev) { el.addEventListener(ev, function () { setActive(code, false); }); });
+  });
+
+  if (typeof jsVectorMap === 'undefined') return;
+
+  var css = getComputedStyle(document.documentElement);
+  var c = function (name) { return css.getPropertyValue(name).trim(); };
+  var map = null;
+
+  // Frame the Atlantic: the Americas on the left, Europe on the right.
+  function focusConfig() {
+    var w = mapEl.offsetWidth;
+    return { coords: [21, -42], scale: w < 560 ? 1.6 : (w < 820 ? 1.8 : 1.95), animate: false };
+  }
+
+  function positionPins() {
+    if (!map) return;
+    pins.forEach(function (pin) {
+      var p = map.coordsToPoint(parseFloat(pin.getAttribute('data-lat')), parseFloat(pin.getAttribute('data-lng')));
+      if (!p) { pin.hidden = true; return; }
+      pin.hidden = false;
+      pin.style.left = p.x + 'px';
+      pin.style.top = p.y + 'px';
+    });
+    card.classList.add('is-ready');
+  }
+
+  map = new jsVectorMap({
     selector: '#world-map',
     map: 'world',
     backgroundColor: 'transparent',
     zoomButtons: false,
     zoomOnScroll: false,
     draggable: false,
+    showTooltip: false,
+    regionsSelectable: false,
     regionStyle: {
-      initial: {
-        fill: '#c8e6c9',
-        stroke: '#a5d6a7',
-        strokeWidth: 0.5
-      },
-      hover: {
-        fill: '#81c784',
-        cursor: 'default'
-      },
-      selected: {
-        fill: '#66bb6a'
-      }
+      initial: { fill: c('--brown-200'), stroke: c('--brown-50'), strokeWidth: 0.7 },
+      hover: { fill: c('--brown-200'), cursor: 'default' },
+      selected: { fill: c('--brown-500') },
+      selectedHover: { fill: c('--brown-600'), cursor: 'default' }
     },
-    markersSelectable: false,
-    markers: [
-      { name: '{{ i18n "location_ireland" | default "Ireland" }}', coords: [53.1424, -7.6921] },
-      { name: '{{ i18n "location_portugal" | default "Portugal" }}', coords: [39.3999, -8.2245] },
-      { name: '{{ i18n "location_sweden" | default "Sweden" }}', coords: [60.1282, 18.6435] },
-      { name: '{{ i18n "location_france" | default "France" }}', coords: [46.2276, 2.2137] },
-      { name: '{{ i18n "location_usa" | default "United States" }}', coords: [39.8283, -98.5795] },
-      { name: '{{ i18n "location_brazil" | default "Brazil" }}', coords: [-14.235, -51.9253] },
-      { name: '{{ i18n "location_peru" | default "Peru" }}', coords: [-9.19, -75.0152] }
-    ],
-    markerStyle: {
-      initial: {
-        fill: '#2e7d32',
-        stroke: '#ffffff',
-        strokeWidth: 2,
-        r: 8
-      },
-      hover: {
-        fill: '#1b5e20',
-        stroke: '#ffffff',
-        r: 10
-      }
-    },
-    markerLabelStyle: {
-      initial: {
-        fontFamily: 'Inter, sans-serif',
-        fontSize: 12,
-        fontWeight: 500,
-        fill: '#424242'
-      }
-    },
-    labels: {
-      markers: {
-        render: function(marker) {
-          return marker.name;
-        }
-      }
-    },
-    focusOn: {
-      x: 0.5,
-      y: 0.5,
-      scale: 1
-    }
+    selectedRegions: codes,
+    focusOn: focusConfig(),
+    onLoaded: function () { map = this; positionPins(); },
+    onViewportChange: function () { positionPins(); }
+  });
+
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      map.updateSize();
+      map.setFocus(focusConfig());
+      positionPins();
+    }, 150);
   });
 });
 </script>

@@ -4,9 +4,32 @@ nav_global: "Atuação Global"
 nav_cv: "Currículo"
 nav_contact: "Contato"
 nav_menu: "Menu"
+skip_to_content: "Pular para o conteúdo"
+lang_switch_label: "Idioma"
 
 cta_contact: "Entre em Contato"
 cta_learn_more: "Saiba Mais"
+
+hero_eyebrow: "Atendimento online"
+hero_chip_cbt: "TCC baseada em evidências"
+hero_chip_lang: "Sessões em português"
+hero_chip_remote: "Europa e Américas"
+
+badge_online_title: "Sessões online"
+badge_online_sub: "Europa · Américas"
+badge_cbt_title: "TCC"
+badge_cbt_sub: "Baseada em evidências"
+
+stat_countries: "países atendidos"
+stat_languages: "idiomas"
+stat_online: "online"
+
+eyebrow_about: "Sobre"
+eyebrow_approach: "Como trabalho"
+eyebrow_global: "Onde atendo"
+eyebrow_instagram: "Instagram"
+eyebrow_cv: "Currículo"
+eyebrow_contact: "Contato"
 
 cv_about: "Sobre"
 cv_education: "Formação"
@@ -21,6 +44,7 @@ contact_email: "Enviar Email"
 
 footer_tagline: "Psicóloga"
 footer_rights: "Todos os direitos reservados."
+footer_nav: "Navegação"
 
 location_ireland: "Irlanda"
 location_portugal: "Portugal"
@@ -33,3 +57,5 @@ location_peru: "Peru"
 instagram_posts: "publicações"
 instagram_followers: "seguidores"
 instagram_follow: "Seguir no Instagram"
+
+map_legend: "Países onde atendo"

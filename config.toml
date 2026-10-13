@@ -4,6 +4,7 @@ title = "Fernanda - Psychologist"
 
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir = true
+disableKinds = ["taxonomy", "term"]
 
 [markup]
   [markup.goldmark]
@@ -28,7 +29,7 @@ defaultContentLanguageInSubdir = true
 [params]
   author = "Fernanda"
   instagram = "https://www.instagram.com/psicolisboa"
-  email = "contact@example.com"
+  email = "fernandapsicolisboa@gmail.com"
 
 [build]
   writeStats = true

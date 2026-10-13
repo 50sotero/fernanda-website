@@ -4,9 +4,32 @@ nav_global: "Global Practice"
 nav_cv: "CV"
 nav_contact: "Contact"
 nav_menu: "Menu"
+skip_to_content: "Skip to content"
+lang_switch_label: "Language"
 
 cta_contact: "Get in Touch"
 cta_learn_more: "Learn More"
+
+hero_eyebrow: "Online sessions"
+hero_chip_cbt: "Evidence-based CBT"
+hero_chip_lang: "Sessions in Portuguese"
+hero_chip_remote: "Europe & the Americas"
+
+badge_online_title: "Online sessions"
+badge_online_sub: "Europe · Americas"
+badge_cbt_title: "CBT"
+badge_cbt_sub: "Evidence-based"
+
+stat_countries: "countries served"
+stat_languages: "languages"
+stat_online: "online"
+
+eyebrow_about: "About"
+eyebrow_approach: "How I work"
+eyebrow_global: "Where I practice"
+eyebrow_instagram: "Instagram"
+eyebrow_cv: "Credentials"
+eyebrow_contact: "Contact"
 
 cv_about: "About"
 cv_education: "Education"
@@ -21,6 +44,7 @@ contact_email: "Send Email"
 
 footer_tagline: "Psychologist"
 footer_rights: "All rights reserved."
+footer_nav: "Navigate"
 
 location_ireland: "Ireland"
 location_portugal: "Portugal"
@@ -33,3 +57,5 @@ location_peru: "Peru"
 instagram_posts: "posts"
 instagram_followers: "followers"
 instagram_follow: "Follow on Instagram"
+
+map_legend: "Countries I serve"

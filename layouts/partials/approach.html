@@ -1,20 +1,23 @@
 {{ $content := index .Site.Data .Lang "content" }}
 
-<section class="approach" id="approach">
+<section class="approach section" id="approach">
   <div class="container">
-    <h2 class="section-title">{{ $content.approach.title }}</h2>
-    <div class="approach-content">
-      <div class="approach-intro">
-        <p>{{ $content.approach.intro }}</p>
+    <div class="approach-intro">
+      <div class="section-head reveal">
+        <span class="eyebrow">{{ i18n "eyebrow_approach" }}</span>
+        <h2 class="section-title">{{ $content.approach.title }}</h2>
       </div>
-      <div class="approach-methods">
-        {{ range $content.approach.methods }}
-          <div class="method-card">
-            <h3>{{ .name }}</h3>
-            <p>{{ .description }}</p>
-          </div>
-        {{ end }}
-      </div>
+      <p class="reveal d-1">{{ $content.approach.intro }}</p>
+    </div>
+
+    <div class="approach-methods">
+      {{ range $i, $m := $content.approach.methods }}
+        <article class="method-card reveal d-{{ add (mod $i 3) 1 }}">
+          <span class="method-index" aria-hidden="true">{{ printf "%02d" (add $i 1) }}</span>
+          <h3>{{ $m.name }}</h3>
+          <p>{{ $m.description }}</p>
+        </article>
+      {{ end }}
     </div>
   </div>
 </section>

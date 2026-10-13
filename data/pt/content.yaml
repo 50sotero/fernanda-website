@@ -42,33 +42,54 @@ map:
   subtitle: "Atendendo pacientes brasileiros em diferentes continentes através de sessões online seguras"
   locations:
     - name: "Irlanda"
+      code: "IE"
       flag: "🇮🇪"
-      x: 470
-      y: 135
+      lat: 53.1424
+      lng: -7.6921
+      side: "left"
+      group: "Europa"
     - name: "Portugal"
+      code: "PT"
       flag: "🇵🇹"
-      x: 460
-      y: 160
-    - name: "Suécia"
-      flag: "🇸🇪"
-      x: 510
-      y: 110
+      lat: 39.3999
+      lng: -8.2245
+      side: "bottom"
+      group: "Europa"
     - name: "França"
+      code: "FR"
       flag: "🇫🇷"
-      x: 480
-      y: 150
+      lat: 46.2276
+      lng: 2.2137
+      side: "right"
+      group: "Europa"
+    - name: "Suécia"
+      code: "SE"
+      flag: "🇸🇪"
+      lat: 60.1282
+      lng: 18.6435
+      side: "right"
+      group: "Europa"
     - name: "Estados Unidos"
+      code: "US"
       flag: "🇺🇸"
-      x: 250
-      y: 200
+      lat: 39.8283
+      lng: -98.5795
+      side: "right"
+      group: "América do Norte"
     - name: "Brasil"
+      code: "BR"
       flag: "🇧🇷"
-      x: 310
-      y: 330
+      lat: -14.235
+      lng: -51.9253
+      side: "right"
+      group: "América do Sul"
     - name: "Peru"
+      code: "PE"
       flag: "🇵🇪"
-      x: 260
-      y: 310
+      lat: -9.19
+      lng: -75.0152
+      side: "left"
+      group: "América do Sul"
 
 instagram:
   title: "Siga no Instagram"
